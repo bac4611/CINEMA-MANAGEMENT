@@ -1,0 +1,14 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/admin :: layout(~{::title}, 'settings', ~{::main}, ~{::script})}">
+<head><title>Cài đặt quản trị - Cosmos Cinema</title></head><body>
+<main class="space-y-8"><div class="border-b border-outline-variant/30 pb-6"><h1 class="font-display text-5xl font-bold">Cài đặt</h1><p class="mt-2 text-on-surface-variant">Cập nhật tài khoản quản trị.</p></div>
+  <form th:action="@{/Admin/UpdateSettings}" th:object="${settings}" method="post" class="relative max-w-3xl rounded-xl border border-outline-variant/30 bg-surface-container p-8">
+    <h2 class="mb-7 flex items-center gap-3 font-display text-2xl"><span class="material-symbols-outlined text-primary">person</span>Trang cá nhân</h2>
+    <div th:if="${successMessage}" class="mb-5 rounded border border-primary/30 bg-primary/10 p-3 text-primary" th:text="${successMessage}"></div><div th:if="${errorMessage}" class="mb-5 rounded border border-error/30 bg-error/10 p-3 text-error" th:text="${errorMessage}"></div>
+    <div class="space-y-6"><label class="block font-mono text-xs uppercase text-on-surface-variant">Tên<input th:field="*{fullName}" class="cinematic-input mt-1 w-full px-0 py-2 text-on-surface"></label><p class="auth-field-error" th:errors="*{fullName}"></p>
+      <label class="block font-mono text-xs uppercase text-on-surface-variant">Email<input th:field="*{email}" type="email" class="cinematic-input mt-1 w-full px-0 py-2 text-on-surface"></label><p class="auth-field-error" th:errors="*{email}"></p>
+      <label class="block font-mono text-xs uppercase text-on-surface-variant">Mật khẩu hiện tại<input th:field="*{currentPassword}" type="password" autocomplete="current-password" class="cinematic-input mt-1 w-full px-0 py-2 text-on-surface"></label>
+      <label class="block font-mono text-xs uppercase text-on-surface-variant">Mật khẩu mới<input th:field="*{newPassword}" type="password" autocomplete="new-password" class="cinematic-input mt-1 w-full px-0 py-2 text-on-surface"></label>
+      <button class="rounded bg-primary-container px-7 py-3 font-mono text-sm text-on-primary-container">Lưu thay đổi</button>
+    </div>
+  </form>
+</main><script></script></body></html>

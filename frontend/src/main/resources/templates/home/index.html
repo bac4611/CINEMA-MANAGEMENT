@@ -1,0 +1,110 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::title}, ~{::link}, ~{::main}, ~{::script})}">
+<head><title>COSMOS Cinema</title><link rel="stylesheet" th:href="@{/css/home.css}"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></head><body>
+<main class="home-page" id="homePage">
+  <section class="slider-container" aria-label="Phim nổi bật tại COSMOS"><div th:if="${!#lists.isEmpty(movies)}" class="slider-wrapper" id="sliderWrapper"><article th:each="movie,stat : ${movies}" th:if="${stat.index < 6}" class="slider-slide" th:classappend="${stat.first} ? ' is-active'"><img class="slider-slide__backdrop" th:src="${#strings.isEmpty(movie.posterUrl) ? '/images/posters/poster1.png' : movie.posterUrl}" alt="" aria-hidden="true"><div class="slider-slide__shade"></div><div class="slider-slide__content"><div class="slider-slide__copy"><p class="home-eyebrow">Phim nổi bật</p><a class="slider-slide__title-link" th:href="@{/Home/Details(id=${movie.movieId})}"><h1 th:text="${#strings.isEmpty(movie.title) ? 'Phim đang chiếu' : movie.title}"></h1></a><p class="slider-slide__description" th:text="${#strings.abbreviate(movie.synopsis,210)}"></p><div class="slider-slide__meta"><span th:text="${movie.genre}"></span><span th:text="${#temporals.format(movie.releaseDate,'dd/MM/yyyy')}"></span><span th:text="|${movie.duration} phút|"></span></div><div class="home-actions"><form th:action="@{/Booking/SelectShowtime}" method="get"><input type="hidden" name="movieId" th:value="${movie.movieId}"><button class="home-cta home-cta--primary"><i class="fa-solid fa-ticket"></i> Đặt vé</button></form></div></div><a class="slider-slide__poster" th:href="@{/Home/Details(id=${movie.movieId})}"><img th:src="${#strings.isEmpty(movie.posterUrl) ? '/images/posters/poster1.png' : movie.posterUrl}" th:alt="|Poster phim ${movie.title}|"></a></div></article></div>
+    <div th:if="${#lists.isEmpty(movies)}" class="slider-empty"><p class="home-eyebrow">Phim đang chiếu</p><h1>COSMOS Cinema</h1><p>Lịch phim sẽ hiển thị sau khi dữ liệu được cập nhật.</p></div><button th:unless="${#lists.isEmpty(movies)}" class="slider-btn prev" type="button" data-slider-step="-1">‹</button><button th:unless="${#lists.isEmpty(movies)}" class="slider-btn next" type="button" data-slider-step="1">›</button><div class="slider-dots"><button th:each="movie,stat : ${movies}" th:if="${stat.index < 6}" class="slider-dot" th:classappend="${stat.first} ? ' is-active'" type="button" th:attr="data-slider-dot=${stat.index},aria-label=|Chuyển đến phim ${stat.count}|"></button></div>
+  </section>
+  <section class="home-section movie-gallery-section reveal-on-scroll" id="now-showing" data-reveal><div class="section-heading"><span class="home-eyebrow">Danh sách phim</span></div><div th:if="${!#lists.isEmpty(movies)}" class="movie-gallery"><div class="movie-gallery__row"><article th:each="movie,stat : ${movies}" class="movie-gallery__col reveal-on-scroll" data-reveal><a class="movie-poster" th:href="@{/Home/Details(id=${movie.movieId})}"><span class="movie-poster__badges"><span th:if="${stat.index < 3}" class="movie-rank-badge" th:text="${stat.count}"></span></span><img th:src="${#strings.isEmpty(movie.posterUrl) ? '/images/posters/poster1.png' : movie.posterUrl}" th:alt="|Poster ${movie.title}|" loading="lazy"><span class="movie-poster__overlay">Chi tiết</span></a><div class="movie-details"><div class="movie-details__content"><a class="movie-title" th:href="@{/Home/Details(id=${movie.movieId})}" th:text="${movie.title}"></a><div class="movie-genre-duration"><span class="movie-genre" th:text="${movie.genre}"></span><span class="movie-duration" th:text="|${movie.duration} phút|"></span></div><div class="movie-rating-row"><span><i class="fa-solid fa-star"></i> <span th:text="${movie.reviewCount > 0 ? #numbers.formatDecimal(movie.averageRating,1,1) + '/5' : 'Chưa có đánh giá'}"></span></span><small th:if="${movie.reviewCount > 0}" th:text="|${movie.reviewCount} đánh giá|"></small></div><div class="buy-button__container"><form th:action="@{/Booking/SelectShowtime}" method="get" class="buy-button__form"><input type="hidden" name="movieId" th:value="${movie.movieId}"><button class="buy-button__content">Đặt vé</button></form></div></div></div></article></div></div><div th:if="${#lists.isEmpty(movies)}" class="movie-empty"><h3>Hiện chưa có phim nào.</h3><p>Danh sách phim sẽ tự động xuất hiện sau khi được cập nhật.</p></div></section>
+  <section class="home-section poster-showcase reveal-on-scroll" aria-labelledby="poster-showcase-title" data-reveal>
+    <div class="section-heading section-heading--compact">
+      <span class="home-eyebrow">Poster &amp; sự kiện</span>
+      <div><h2 id="poster-showcase-title">Khám phá phim mới tại COSMOS</h2></div>
+    </div>
+    <div class="poster-showcase__track">
+      <a class="poster-showcase__item poster-showcase__item--portrait" th:href="@{/Home/Details(id=1)}">
+        <img th:src="@{/images/posters/doraemon-ocean.jpg}" alt="Poster Doraemon: Nobita và chuyến phiêu lưu dưới đáy biển" loading="lazy">
+        <span>Doraemon</span>
+      </a>
+      <a class="poster-showcase__item" th:href="@{/Home/Details(id=2)}">
+        <img th:src="@{/images/posters/toy-story-5-banner.jpg}" alt="Banner Toy Story 5" loading="lazy">
+        <span>Toy Story 5</span>
+      </a>
+      <a class="poster-showcase__item" th:href="@{/Home/Movie}">
+        <img th:src="@{/images/posters/conan-2026-banner.png}" alt="Banner Thám tử lừng danh Conan 2026" loading="lazy">
+        <span>Conan 2026</span>
+      </a>
+      <a class="poster-showcase__item" th:href="@{/Home/Movie}">
+        <img th:src="@{/images/posters/the-odyssey-banner.jpg}" alt="Banner The Odyssey" loading="lazy">
+        <span>The Odyssey</span>
+      </a>
+      <a class="poster-showcase__item" th:href="@{/Home/Movie}">
+        <img th:src="@{/images/posters/minions-banner.png}" alt="Banner Minions" loading="lazy">
+        <span>Minions</span>
+      </a>
+      <a class="poster-showcase__item" th:href="@{/Home/Movie}">
+        <img th:src="@{/images/posters/alien-summer-banner.png}" alt="Banner sự kiện mùa hè COSMOS Cinema" loading="lazy">
+        <span>Mùa hè COSMOS</span>
+      </a>
+    </div>
+  </section>
+  <section class="home-section cinema-intro reveal-on-scroll" data-reveal><div class="cinema-intro__copy"><span class="home-eyebrow">Về COSMOS</span><h2>Một điểm hẹn điện ảnh dành cho những buổi xem phim đáng nhớ</h2><p>COSMOS Cinema kết hợp lịch chiếu rõ ràng, phòng chiếu thoải mái và dịch vụ đặt vé nhanh.</p></div><div class="cinema-intro__grid"><article class="intro-feature intro-feature--wide"><span class="intro-feature__number">01</span><h3>Không gian tập trung</h3><p>Ánh sáng được tiết chế và ghế ngồi dễ chịu.</p></article><article class="intro-feature"><span class="intro-feature__number">02</span><h3>Đặt vé rõ ràng</h3><p>Thông tin phim và lịch chiếu được trình bày dễ hiểu.</p></article><article class="intro-feature"><span class="intro-feature__number">03</span><h3>Giá vé minh bạch</h3><p>Xem trước mức giá theo định dạng và hạng ghế.</p></article></div></section>
+  <section class="home-section promo-section reveal-on-scroll" data-reveal><div class="section-heading section-heading--compact"><span class="home-eyebrow">Ưu đãi và dịch vụ</span><div><h2>Chuẩn bị cho buổi xem phim trọn vẹn hơn</h2></div></div><div class="promo-layout"><article class="promo-card promo-card--wide"><div><span class="promo-card__label">Combo tại quầy</span><h3>Bắp nước sẵn sàng trước giờ phim</h3><p>Chọn combo phù hợp cho buổi xem phim cùng bạn bè và gia đình.</p></div><a class="home-cta home-cta--primary" th:href="@{/Home/Movie}">Chọn phim →</a></article><div class="promo-stack"><article class="promo-card"><span class="promo-card__label">Lịch chiếu</span><h3>Suất chiếu cập nhật theo từng phim</h3></article><article class="promo-card promo-card--muted"><span class="promo-card__label">Giá vé</span><h3>Xem giá trước khi đặt</h3><a th:href="@{/Home/TicketPricing}">Xem bảng giá</a></article></div></div></section>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const slider = document.querySelector('.slider-container');
+  const wrapper = document.getElementById('sliderWrapper');
+  const homePage = document.getElementById('homePage');
+  const reveals = [...document.querySelectorAll('[data-reveal]')];
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  if (homePage && reveals.length) {
+    homePage.classList.add('js-reveal-ready');
+    if (reduceMotion.matches || !('IntersectionObserver' in window)) {
+      reveals.forEach(item => item.classList.add('is-visible'));
+    } else {
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        });
+      }, { rootMargin: '0px 0px -12% 0px', threshold: 0.14 });
+      reveals.forEach(item => observer.observe(item));
+    }
+  }
+
+  if (!slider || !wrapper) return;
+  const slides = [...slider.querySelectorAll('.slider-slide')];
+  const dots = [...slider.querySelectorAll('[data-slider-dot]')];
+  let current = 0;
+  let timer = null;
+
+  const show = index => {
+    current = (index + slides.length) % slides.length;
+    wrapper.style.transform = `translateX(-${current * 100}%)`;
+    slides.forEach((slide, position) => slide.classList.toggle('is-active', position === current));
+    dots.forEach((dot, position) => {
+      const active = position === current;
+      dot.classList.toggle('is-active', active);
+      dot.setAttribute('aria-current', String(active));
+    });
+  };
+  const stop = () => {
+    if (timer) window.clearInterval(timer);
+    timer = null;
+  };
+  const start = () => {
+    stop();
+    if (!reduceMotion.matches && slides.length > 1) timer = window.setInterval(() => show(current + 1), 6000);
+  };
+
+  slider.querySelectorAll('[data-slider-step]').forEach(button => button.addEventListener('click', () => {
+    show(current + Number(button.dataset.sliderStep));
+    start();
+  }));
+  dots.forEach(dot => dot.addEventListener('click', () => {
+    show(Number(dot.dataset.sliderDot));
+    start();
+  }));
+  slider.addEventListener('mouseenter', stop);
+  slider.addEventListener('mouseleave', start);
+  slider.addEventListener('focusin', stop);
+  slider.addEventListener('focusout', start);
+  document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
+  show(0);
+  start();
+});
+</script>
+</body>
+</html>

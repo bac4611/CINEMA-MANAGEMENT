@@ -53,7 +53,7 @@ public class AccountApiController {
     @PostMapping({"/login", "/api/account/login"})
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         // Passwordless login is only effective for the three allow-listed accounts in the dev profile.
-        var result = accounts.authenticate(request, true);
+        var result = accounts.authenticate(request, accounts.isDevelopment());
         if (result.status() != AccountService.LoginStatus.SUCCESS) {
             String message = switch (result.status()) {
                 case INACTIVE -> "Tài khoản đã bị khóa";

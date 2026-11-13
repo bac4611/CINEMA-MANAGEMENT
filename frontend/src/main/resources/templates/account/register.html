@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout(~{::title}, ~{::link}, ~{::main}, ~{::script})}">
+<head><title>Đăng ký - COSMOS Cinema</title><link rel="stylesheet" th:href="@{/css/auth.css}"></head>
+<body><main>
+    <section class="auth-wrapper auth-page-register"><div class="auth-shell max-w-7xl mx-auto"><div class="auth-form-panel">
+        <div class="auth-form-heading"><p class="auth-form-kicker">COSMOS CINEMA</p><h2>Tạo tài khoản</h2>
+            <p>Thông tin này giúp COSMOS phục vụ đặt vé và liên hệ chính xác hơn.</p></div>
+        <form class="auth-form" th:action="@{/Account/Register}" th:object="${register}" method="post" novalidate>
+            <div class="auth-validation-summary" th:if="${#fields.hasGlobalErrors()}">
+                <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Dữ liệu không hợp lệ</p>
+            </div>
+            <div class="auth-field-grid">
+                <div class="auth-field"><label for="name-input" class="auth-label">Họ tên</label>
+                    <div class="auth-input-frame"><span class="auth-input-icon">♙</span>
+                        <input id="name-input" th:field="*{fullName}" type="text" class="form-control auth-input" autocomplete="name" placeholder="Nguyễn An"></div>
+                    <small id="name-error" class="auth-field-error"></small><span class="auth-field-error" th:errors="*{fullName}"></span></div>
+                <div class="auth-field"><label for="phone-input" class="auth-label">Số điện thoại</label>
+                    <div class="auth-input-frame"><span class="auth-input-icon">☎</span>
+                        <input id="phone-input" th:field="*{phoneNumber}" type="tel" class="form-control auth-input" autocomplete="tel" placeholder="0901234567"></div>
+                    <small id="phone-error" class="auth-field-error"></small><span class="auth-field-error" th:errors="*{phoneNumber}"></span></div>
+            </div>
+            <div class="auth-field-grid">
+                <div class="auth-field"><label for="email-input" class="auth-label">Email</label>
+                    <div class="auth-input-frame"><span class="auth-input-icon">✉</span>
+                        <input id="email-input" th:field="*{email}" type="email" class="form-control auth-input" autocomplete="email" placeholder="you@example.com"></div>
+                    <small id="email-error" class="auth-field-error"></small><span class="auth-field-error" th:errors="*{email}"></span></div>
+                <div class="auth-field"><label for="dateOfBirth" class="auth-label">Ngày sinh</label>
+                    <div class="auth-input-frame"><span class="auth-input-icon">▣</span>
+                        <input id="dateOfBirth" th:field="*{dateOfBirth}" type="date" class="form-control auth-input" autocomplete="bday"></div>
+                    <span class="auth-field-error" th:errors="*{dateOfBirth}"></span></div>
+            </div>
+            <div class="auth-field"><label for="passwordInput" class="auth-label">Mật khẩu</label>
+                <div class="auth-input-frame"><span class="auth-input-icon">●</span>
+                    <input id="passwordInput" th:field="*{password}" type="password" class="form-control auth-input" autocomplete="new-password">
+                    <button class="auth-password-toggle" id="togglePassword" type="button">◉</button></div>
+                <small class="auth-helper">Ít nhất 8 ký tự, gồm chữ hoa, số và ký tự đặc biệt.</small>
+                <small id="password-error" class="auth-field-error"></small><span class="auth-field-error" th:errors="*{password}"></span></div>
+            <div class="auth-field"><label for="confirmPasswordInput" class="auth-label">Nhập lại mật khẩu</label>
+                <div class="auth-input-frame"><span class="auth-input-icon">✓</span>
+                    <input id="confirmPasswordInput" th:field="*{confirmPassword}" type="password" class="form-control auth-input" autocomplete="new-password"></div>
+                <small id="confirmPasswordError" class="auth-field-error"></small><span class="auth-field-error" th:errors="*{confirmPassword}"></span></div>
+            <button type="submit" class="btn btn-submit">Tạo tài khoản</button>
+        </form>
+        <th:block th:if="${googleLoginEnabled}"><div class="auth-divider"><span>hoặc</span></div>
+            <form th:action="@{/GoogleAuth/Login}" method="post"><button type="submit" class="btn-google">Đăng nhập với Google</button></form></th:block>
+        <p class="auth-switch-copy">Đã có tài khoản? <a th:href="@{/Account/Login}">Đăng nhập</a></p>
+    </div></div></section>
+</main><script th:src="@{/js/auth.js}"></script></body></html>
