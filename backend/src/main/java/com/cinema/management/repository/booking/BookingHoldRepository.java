@@ -18,7 +18,7 @@ public interface BookingHoldRepository extends JpaRepository<BookingHold, UUID> 
     @Query("select h from BookingHold h where h.bookingHoldId = :holdId")
     Optional<BookingHold> findByIdForUpdate(@Param("holdId") UUID holdId);
 
-    @EntityGraph(attributePaths = {"movie", "showtime", "seatHolds.seat", "comboHolds.combo"})
+    @EntityGraph(attributePaths = {"movie", "showtime", "showtime.room", "user"})
     @Query("select h from BookingHold h where h.bookingHoldId = :holdId")
     Optional<BookingHold> findDetailsById(@Param("holdId") UUID holdId);
 }

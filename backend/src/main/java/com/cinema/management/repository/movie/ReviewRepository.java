@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Collection;
 
 public interface ReviewRepository extends JpaRepository<Review, Integer> {
     List<Review> findByMovieMovieIdAndStatusOrderByCreatedAtDesc(
@@ -23,5 +24,12 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
     long countByMovieMovieIdAndStatusAndRatingIsNotNull(
             Integer movieId, String status);
+
+    @EntityGraph(attributePaths = "user")
+    List<Review> findByMovieMovieIdAndParentReviewIsNullAndStatusAndRatingIsNotNullOrderByCreatedAtDesc(
+            Integer movieId, String status);
+
+    List<Review> findByMovieMovieIdInAndParentReviewIsNullAndStatusAndRatingIsNotNull(
+            Collection<Integer> movieIds, String status);
 }
 

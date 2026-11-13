@@ -12,6 +12,10 @@ public interface PaymentIntentRepository extends JpaRepository<PaymentIntent, In
     Optional<PaymentIntent> findByPaymentReference(String paymentReference);
     Optional<PaymentIntent> findBySePayTransactionId(Long sePayTransactionId);
     Optional<PaymentIntent> findByBookingHoldBookingHoldId(UUID bookingHoldId);
+    Optional<PaymentIntent> findByBookingHoldBookingHoldIdAndStatus(UUID bookingHoldId, String status);
+    Optional<PaymentIntent> findByPaymentReferenceAndUserUserId(String paymentReference, Integer userId);
+    boolean existsBySePayTransactionIdAndPaymentIntentIdNot(Long transactionId, Integer paymentIntentId);
+    boolean existsByPaymentReference(String paymentReference);
     List<PaymentIntent> findByStatusAndExpiresAtUtcBefore(String status, Instant expiresAtUtc);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

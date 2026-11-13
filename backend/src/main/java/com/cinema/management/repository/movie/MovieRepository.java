@@ -17,5 +17,9 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
     })
     @Query("select m from Movie m where m.movieId = :movieId")
     Optional<Movie> findDetailsById(@Param("movieId") Integer movieId);
+
+    @EntityGraph(attributePaths = {"movieGenres.genre"})
+    @Query("select distinct m from Movie m")
+    List<Movie> findAllForChatbot();
 }
 

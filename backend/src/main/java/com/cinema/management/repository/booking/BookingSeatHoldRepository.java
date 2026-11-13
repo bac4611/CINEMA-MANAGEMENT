@@ -10,6 +10,7 @@ import java.util.UUID;
 public interface BookingSeatHoldRepository
         extends JpaRepository<BookingSeatHold, BookingSeatHold.Key> {
     boolean existsByShowtimeIdAndSeatId(Integer showtimeId, Integer seatId);
+    Optional<BookingSeatHold> findByShowtimeIdAndSeatId(Integer showtimeId, Integer seatId);
     List<BookingSeatHold> findByBookingHoldId(UUID bookingHoldId);
     void deleteByBookingHoldId(UUID bookingHoldId);
 
