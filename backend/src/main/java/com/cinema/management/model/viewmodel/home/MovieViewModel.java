@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import com.cinema.management.model.viewmodel.booking.ShowtimeChoiceViewModel;
 
 @Getter @Setter @NoArgsConstructor
 public class MovieViewModel {
@@ -23,6 +24,7 @@ public class MovieViewModel {
     private int reviewCount;
     private MovieReviewSummaryViewModel reviewSummary = new MovieReviewSummaryViewModel();
     private List<MovieReviewViewModel> reviews = new ArrayList<>();
+    private List<ShowtimeChoiceViewModel> showtimes = new ArrayList<>();
     private String availableFormats = "2D";
     private Integer languageId;
     private String languageName = "";

@@ -25,6 +25,7 @@ public class UserSignInService {
             User user,
             boolean rememberMe) {
         HttpSession session = request.getSession(true);
+        request.changeSessionId();
         session.setAttribute("UserEmail", user.getEmail());
         session.setAttribute("UserFullName", user.getFullName());
         session.setAttribute("UserRole", user.getRole());

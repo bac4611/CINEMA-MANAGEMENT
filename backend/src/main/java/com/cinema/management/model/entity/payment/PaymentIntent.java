@@ -32,6 +32,7 @@ public class PaymentIntent {
     private BookingHold bookingHold;
 
     @NotBlank @Size(max = 100)
+    @Column(unique = true)
     private String paymentReference = "";
     @NotNull @Column(precision = 10, scale = 2)
     private BigDecimal expectedAmount = BigDecimal.ZERO;
@@ -40,6 +41,7 @@ public class PaymentIntent {
     @NotBlank @Size(max = 500)
     private String selectedSeatCodes = "";
     @Lob private String selectedCombosJson;
+    @Column(unique = true)
     private Long sePayTransactionId;
     @Size(max = 255) private String sePayReferenceCode;
     @Lob private String sePayContent;
