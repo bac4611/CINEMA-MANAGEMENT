@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-CinemaApplication<cinema-backend>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "mainClass": "com.cinema.management.CinemaApplication",
+            "projectName": "cinema-backend",
+            "args": "",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "dev"
+            },
+            "vmArgs": "-Djava.library.path=${workspaceFolder}/backend/target/native",
+            "preLaunchTask": "Prepare SQL Server Windows Authentication DLL",
+            "console": "integratedTerminal"
+        }
+    ]
+}

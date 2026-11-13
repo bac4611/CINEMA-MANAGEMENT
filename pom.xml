@@ -21,6 +21,9 @@
 
     <properties>
         <java.version>21</java.version>
+        <!-- Keep the JDBC JAR and native Windows authentication DLL aligned. -->
+        <mssql-jdbc.version>13.4.0.jre11</mssql-jdbc.version>
+        <mssql-jdbc-auth.version>13.4.0.x64</mssql-jdbc-auth.version>
     </properties>
 
     <modules>

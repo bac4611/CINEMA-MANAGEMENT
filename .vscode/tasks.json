@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Prepare SQL Server Windows Authentication DLL",
+            "type": "shell",
+            "command": "${workspaceFolder}\\mvnw.cmd",
+            "args": [
+                "-pl",
+                "backend",
+                "process-resources"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

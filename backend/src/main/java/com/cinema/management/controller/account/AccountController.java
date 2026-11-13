@@ -114,6 +114,11 @@ public class AccountController {
             return "account/register";
         }
         var result = accounts.register(form, linkBuilder(request, "ConfirmEmail"));
+        if (accounts.isDevelopment() && result.status() == AccountService.RegistrationStatus.CREATED) {
+            flash.addFlashAttribute("alertSuccess",
+                    "Đăng ký thành công. Tài khoản dev đã được xác minh tự động, bạn có thể đăng nhập ngay.");
+            return "redirect:/Account/Login";
+        }
         switch (result.status()) {
             case DUPLICATE_ACCOUNT -> {
                 errors.rejectValue("email", "account.duplicate", "Tài khoản đã tồn tại.");
