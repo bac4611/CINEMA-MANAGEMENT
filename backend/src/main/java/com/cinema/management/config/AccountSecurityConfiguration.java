@@ -37,7 +37,8 @@ public class AccountSecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/login", "/api/account/login").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/login", "/api/account/login", "/api/account/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/chatbot/recommend").permitAll()
                         .requestMatchers(HttpMethod.POST, "/webhooks/sepay").permitAll()
                         .requestMatchers("/api/account/me").hasAnyRole("Admin", "Staff", "KhachHang")

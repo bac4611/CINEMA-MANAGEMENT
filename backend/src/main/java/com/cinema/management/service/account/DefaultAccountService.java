@@ -107,8 +107,9 @@ public class DefaultAccountService implements AccountService {
         user.setPasswordHash(passwords.encode(model.getPassword()));
         user.setRole("KhachHang");
         user.setStatus(true);
-        user.setEmailConfirmed(false);
-        String token = verification.generateAndApplyToken(user);
+        boolean development = isDevelopment();
+        user.setEmailConfirmed(development);
+        String token = development ? null : verification.generateAndApplyToken(user);
         try {
             users.saveAndFlush(user);
         } catch (DataIntegrityViolationException exception) {
@@ -121,6 +122,10 @@ public class DefaultAccountService implements AccountService {
         } catch (RuntimeException exception) {
             log.error("Failed to create account", exception);
             return new RegistrationResult(RegistrationStatus.FAILED, email);
+        }
+        if (development) {
+            log.warn("Development authentication is active: registered account {} was confirmed without email.", email);
+            return new RegistrationResult(RegistrationStatus.CREATED, email);
         }
         try {
             verification.sendVerificationEmail(user, verificationLink.apply(user.getUserId(), token)).join();

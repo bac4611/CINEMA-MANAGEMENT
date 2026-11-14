@@ -61,6 +61,14 @@
             <artifactId>mssql-jdbc</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- Native x64 library used by integratedSecurity=true on Windows. -->
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc_auth</artifactId>
+            <version>${mssql-jdbc-auth.version}</version>
+            <type>dll</type>
+            <scope>runtime</scope>
+        </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -117,8 +125,35 @@
         </resources>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-sql-server-auth-library</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>com.microsoft.sqlserver</groupId>
+                                    <artifactId>mssql-jdbc_auth</artifactId>
+                                    <version>${mssql-jdbc-auth.version}</version>
+                                    <type>dll</type>
+                                    <outputDirectory>${project.build.directory}/native</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <jvmArguments>-Djava.library.path=${project.build.directory}/native</jvmArguments>
+                </configuration>
             </plugin>
         </plugins>
     </build>
