@@ -70,6 +70,11 @@ public class BookingController {
         return selectShowtimeInternal(form, request, flash, true);
     }
 
+    @GetMapping({"/SelectShowtimeFromSchedule", "/select-showtime-from-schedule"})
+    public String selectShowtimeFromScheduleGet() {
+        return "redirect:/Booking/Index";
+    }
+
     @GetMapping({"/SelectSeats", "/select-seats"})
     public String selectSeats(HttpServletRequest request, Model model, RedirectAttributes flash) {
         UUID holdId = currentHoldId(request);
@@ -79,6 +84,11 @@ public class BookingController {
             return "redirect:/Booking/Index";
         }
         model.addAttribute("booking", booking);
+        var seatRows = new TreeMap<String, java.util.List<com.cinema.management.model.viewmodel.booking.SeatChoiceViewModel>>();
+        booking.getSeatChoices().stream()
+                .sorted(Comparator.comparing(com.cinema.management.model.viewmodel.booking.SeatChoiceViewModel::getSeatCode))
+                .forEach(seat -> seatRows.computeIfAbsent(seat.getSeatCode().substring(0, 1), key -> new ArrayList<>()).add(seat));
+        model.addAttribute("seatRows", seatRows);
         return "booking/select-seats";
     }
 

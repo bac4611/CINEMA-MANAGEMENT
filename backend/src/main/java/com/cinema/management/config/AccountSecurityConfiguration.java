@@ -65,6 +65,7 @@ public class AccountSecurityConfiguration {
                         .hasRole("KhachHang")
                         .requestMatchers(
                                 "/Booking/CompleteDevPayment", "/booking/CompleteDevPayment",
+                                "/Booking/complete-dev-payment", "/booking/complete-dev-payment",
                                 "/Booking/PaymentStatus", "/booking/PaymentStatus",
                                 "/Booking/CancelBooking", "/booking/CancelBooking",
                                 "/Booking/PaymentSuccess", "/booking/PaymentSuccess")

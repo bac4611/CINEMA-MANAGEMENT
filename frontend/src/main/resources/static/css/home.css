@@ -1,5 +1,5 @@
 :root {
-    --home-bg: #121210;
+    --home-bg: #121212;
     --home-bg-soft: #191816;
     --home-surface: #20201d;
     --home-surface-strong: #292723;
@@ -19,10 +19,11 @@
 .home-page {
     min-height: 100dvh;
     color: var(--home-text);
-    background:
-            radial-gradient(circle at 0 12%, rgba(139, 94, 60, 0.22), transparent 28%),
-            radial-gradient(circle at 100% 36%, rgba(212, 163, 115, 0.12), transparent 26%),
-            linear-gradient(180deg, var(--movie-bg) 0%, #0f0e0d 44%, #171411 100%);
+    background-color: var(--home-bg, #121212);
+    background-image:
+        radial-gradient(circle at 0 12%, rgba(139, 94, 60, 0.22), transparent 28%),
+        radial-gradient(circle at 100% 36%, rgba(212, 163, 115, 0.12), transparent 26%),
+        linear-gradient(180deg, var(--home-bg, #121212) 0%, #0f0e0d 44%, #171411 100%);
     font-family: var(--font-body);
     overflow: hidden;
 }

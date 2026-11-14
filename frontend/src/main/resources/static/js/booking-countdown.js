@@ -5,12 +5,11 @@
     timers.forEach(timer => {
         const output = timer.querySelector("[data-countdown-value]");
         const expiresAt = Date.parse(timer.dataset.expiresAt || "");
-        const parsedServerNow = Date.parse(timer.dataset.serverNow || "");
-        const serverNow = Number.isNaN(parsedServerNow) ? Date.now() : parsedServerNow;
+        const serverNow = Date.parse(timer.dataset.serverNow || "");
         const expiredUrl = timer.dataset.expiredUrl;
         let redirected = false;
 
-        if (!output || Number.isNaN(expiresAt) || !expiredUrl) {
+        if (!output || Number.isNaN(expiresAt) || Number.isNaN(serverNow) || !expiredUrl) {
             return;
         }
 
