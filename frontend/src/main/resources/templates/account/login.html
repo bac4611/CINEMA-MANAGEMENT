@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout(~{::title}, ~{::link}, ~{::main}, ~{::script})}">
+<head><title>Đăng nhập - COSMOS Cinema</title><link rel="stylesheet" th:href="@{/css/auth.css}"></head>
+<body><main>
+    <section class="auth-wrapper auth-page-login"><div class="auth-shell max-w-7xl mx-auto"><div class="auth-form-panel">
+        <div class="auth-form-heading"><p class="auth-form-kicker">COSMOS CINEMA</p><h2>Chào mừng trở lại</h2>
+            <p>Nhập email và mật khẩu để tiếp tục.</p></div>
+
+        <div class="auth-info-panel" th:if="${unconfirmedEmail != null}">
+            <p>Email này chưa được xác minh. Hãy gửi lại email xác minh nếu bạn chưa nhận được.</p>
+            <form th:action="@{/Account/ResendVerificationEmail}" method="post">
+                <input type="hidden" name="email" th:value="${unconfirmedEmail}">
+                <button type="submit" class="auth-inline-button">Gửi lại email xác minh</button>
+            </form>
+        </div>
+
+        <form class="auth-form" th:action="@{/Account/Login}" th:object="${login}" method="post">
+            <div class="auth-validation-summary" th:if="${#fields.hasGlobalErrors()}">
+                <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Đăng nhập thất bại</p>
+            </div>
+            <div class="auth-field"><label for="email-input" class="auth-label">Địa chỉ email</label>
+                <div class="auth-input-frame"><span class="auth-input-icon" aria-hidden="true">✉</span>
+                    <input id="email-input" th:field="*{email}" type="email" class="form-control auth-input"
+                           autocomplete="email" placeholder="you@example.com" aria-describedby="email-helper email-error"></div>
+                <small id="email-helper" class="auth-helper">Dùng email đã đăng ký tài khoản COSMOS.</small>
+                <small id="email-error" class="auth-field-error"></small>
+                <span class="auth-field-error" th:errors="*{email}"></span>
+            </div>
+            <div class="auth-field"><div class="auth-label-row"><label for="passwordInput" class="auth-label">Mật khẩu</label>
+                <a th:href="@{/Account/ForgotPassword}" class="forgot-link">Quên mật khẩu?</a></div>
+                <div class="auth-input-frame"><span class="auth-input-icon" aria-hidden="true">●</span>
+                    <input id="passwordInput" th:field="*{password}" type="password" class="form-control auth-input"
+                           autocomplete="current-password">
+                    <button class="auth-password-toggle" id="togglePassword" type="button" aria-label="Hiện hoặc ẩn mật khẩu">◉</button>
+                </div>
+                <span class="auth-field-error" th:errors="*{password}"></span>
+                <small class="auth-helper" th:if="${showDevelopmentPasswordlessLoginMessage}">
+                    Chế độ dev: ba tài khoản test chỉ cần nhập một mật khẩu không rỗng.
+                </small>
+            </div>
+            <label class="auth-check"><input type="checkbox" th:field="*{rememberMe}" class="form-check-input">
+                <span>Ghi nhớ thiết bị này</span></label>
+            <button type="submit" class="btn btn-submit">Đăng nhập</button>
+        </form>
+
+        <th:block th:if="${googleLoginEnabled}">
+            <div class="auth-divider"><span>hoặc</span></div>
+            <form th:action="@{/GoogleAuth/Login}" method="post">
+                <input type="hidden" name="returnUrl" th:value="${param.ReturnUrl != null ? param.ReturnUrl[0] : ''}">
+                <button type="submit" class="btn-google"><span>Đăng nhập với Google</span></button>
+            </form>
+        </th:block>
+        <p class="auth-switch-copy">Chưa có tài khoản? <a th:href="@{/Account/Register}">Tạo tài khoản mới</a></p>
+    </div></div></section>
+</main><script th:src="@{/js/auth.js}"></script></body></html>

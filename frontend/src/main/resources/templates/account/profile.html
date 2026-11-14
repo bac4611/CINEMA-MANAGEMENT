@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout(~{::title}, ~{::link}, ~{::main}, ~{::script})}">
+<head>
+    <title>Trang cá nhân - COSMOS Cinema</title>
+    <link rel="stylesheet" th:href="@{/css/profile.css}">
+</head>
+<body><main class="cosmos-profile">
+    <section class="cosmos-profile__shell" aria-labelledby="profile-title">
+        <aside class="profile-card">
+            <button type="button" class="profile-avatar-button" id="profileAvatarButton" data-open-modal="avatarMenuModal">
+                <img id="profileAvatarImage" src="" th:alt="'Ảnh đại diện của ' + ${user.fullName}">
+                <span class="profile-avatar-initial" id="profileAvatarInitial"
+                      th:text="${#strings.substring(user.fullName,0,1).toUpperCase()}">C</span>
+                <span class="profile-avatar-edit">✎</span>
+            </button>
+            <h1 id="profile-title" th:text="${user.fullName}">Khách hàng COSMOS</h1>
+            <div class="profile-card__meta"><span th:text="${user.email}">email</span><span th:text="${user.phoneNumber}">phone</span></div>
+            <dl class="profile-card__facts">
+                <div><dt>Vai trò</dt><dd th:text="${session.UserRole != null ? session.UserRole : 'KhachHang'}">KhachHang</dd></div>
+                <div><dt>Ngày sinh</dt><dd th:text="${user.dateOfBirth != null ? #temporals.format(user.dateOfBirth,'dd/MM/yyyy') : 'Chưa cập nhật'}">--</dd></div>
+                <div><dt>Lượt đặt vé</dt><dd th:text="${#lists.size(user.bookings)}">0</dd></div>
+            </dl>
+            <button type="button" class="profile-primary-button" data-open-modal="editProfileModal">Chỉnh sửa thông tin</button>
+        </aside>
+
+        <div class="profile-board">
+            <section class="recent-ticket"><div class="recent-ticket__copy">
+                <div><span class="profile-kicker">Vé đặt gần đây</span>
+                    <h2 th:if="${#lists.isEmpty(user.bookings)}">CHƯA CÓ VÉ MỚI</h2>
+                    <h2 th:if="${!#lists.isEmpty(user.bookings)}"
+                        th:text="${!#lists.isEmpty(user.bookings[0].tickets) and user.bookings[0].tickets[0].showtime != null and user.bookings[0].tickets[0].showtime.movie != null ? user.bookings[0].tickets[0].showtime.movie.title : 'ĐƠN ĐẶT VÉ #' + user.bookings[0].bookingId}">Phim</h2>
+                </div>
+                <p class="profile-empty" th:if="${#lists.isEmpty(user.bookings)}">Vé sẽ xuất hiện tại đây sau khi bạn hoàn tất đặt vé.</p>
+                <div class="recent-ticket__facts" th:if="${!#lists.isEmpty(user.bookings)}" th:with="latest=${user.bookings[0]}">
+                    <div><span>Ngày đặt</span><strong th:text="${#temporals.format(latest.bookingDate,'dd/MM/yyyy HH:mm')}">--</strong></div>
+                    <div><span>Số vé</span><strong th:text="${#lists.size(latest.tickets)}">0</strong></div>
+                    <div><span>Thanh toán</span><strong th:text="${#numbers.formatDecimal(latest.totalAmount,0,'POINT',0,'COMMA') + ' ₫'}">0 ₫</strong></div>
+                </div>
+            </div></section>
+
+            <section class="booking-ledger">
+                <div class="booking-ledger__header"><div><span class="profile-kicker">Lịch sử đặt vé</span><h2>HÀNH TRÌNH ĐIỆN ẢNH</h2></div>
+                    <span class="profile-status" th:text="${#lists.size(user.bookings) + ' lượt đặt vé'}">0 lượt</span></div>
+                <p class="profile-empty" th:if="${#lists.isEmpty(user.bookings)}">Bạn chưa có đơn đặt vé đã xác nhận.</p>
+                <div class="booking-table-wrap" th:if="${!#lists.isEmpty(user.bookings)}"><table class="booking-table">
+                    <thead><tr><th>Mã đơn</th><th>Phim</th><th>Ngày đặt</th><th>Ghế</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
+                    <tbody><tr th:each="booking : ${user.bookings}">
+                        <td th:text="'#' + ${booking.bookingId}">#1</td>
+                        <td th:text="${!#lists.isEmpty(booking.tickets) and booking.tickets[0].showtime != null and booking.tickets[0].showtime.movie != null ? booking.tickets[0].showtime.movie.title : 'Chưa có thông tin'}">Phim</td>
+                        <td th:text="${#temporals.format(booking.bookingDate,'dd/MM/yyyy HH:mm')}">--</td>
+                        <td><span th:each="ticket, stat : ${booking.tickets}" th:text="${(stat.first ? '' : ', ') + (ticket.seat != null ? ticket.seat.seatCode : '--')}">A1</span></td>
+                        <td th:text="${#numbers.formatDecimal(booking.totalAmount,0,'POINT',0,'COMMA') + ' ₫'}">0 ₫</td>
+                        <td><span class="profile-status" th:text="${booking.status}">Confirmed</span></td>
+                    </tr></tbody>
+                </table></div>
+            </section>
+        </div>
+    </section>
+
+    <div class="profile-modal" id="editProfileModal" hidden><div class="profile-modal__dialog">
+        <div class="profile-modal__header"><div><span class="profile-kicker">Tài khoản</span><h2>Chỉnh sửa thông tin</h2></div>
+            <button type="button" class="profile-modal__close" data-close-modal>×</button></div>
+        <form th:action="@{/Account/Profile}" th:object="${profile}" method="post">
+            <div class="profile-modal__body profile-form-grid">
+                <div class="profile-field is-full"><label>Họ tên</label><input th:field="*{fullName}"><span class="profile-field-error" th:errors="*{fullName}"></span></div>
+                <div class="profile-field is-full"><label>Email</label><input th:field="*{email}" type="email"><span class="profile-field-error" th:errors="*{email}"></span></div>
+                <div class="profile-field"><label>Số điện thoại</label><input th:field="*{phoneNumber}"><span class="profile-field-error" th:errors="*{phoneNumber}"></span></div>
+                <div class="profile-field"><label>Ngày sinh</label><input th:field="*{dateOfBirth}" type="date"><span class="profile-field-error" th:errors="*{dateOfBirth}"></span></div>
+            </div>
+            <div class="profile-modal__footer"><button type="button" class="profile-secondary-button" data-close-modal>Hủy</button>
+                <button type="submit" class="profile-primary-button">Lưu thay đổi</button></div>
+        </form>
+    </div></div>
+
+    <div class="profile-modal" id="avatarMenuModal" hidden><div class="profile-modal__dialog">
+        <div class="profile-modal__header"><div><span class="profile-kicker">Ảnh đại diện</span><h2>Cập nhật ảnh</h2></div>
+            <button type="button" class="profile-modal__close" data-close-modal>×</button></div>
+        <div class="profile-modal__body profile-upload-actions">
+            <input id="avatarFileInput" type="file" accept="image/*">
+            <button id="saveAvatarButton" type="button" class="profile-primary-button">Dùng ảnh đã chọn</button>
+            <button id="removeAvatarButton" type="button" class="profile-secondary-button">Xóa ảnh đại diện</button>
+        </div>
+    </div></div>
+</main>
+<script th:inline="javascript">
+document.addEventListener('DOMContentLoaded', () => {
+  const key = 'cosmos.profile.avatar.' + /*[[${user.userId}]]*/ '0';
+  const image = document.getElementById('profileAvatarImage');
+  const initial = document.getElementById('profileAvatarInitial');
+  const setAvatar = src => { image.src = src || ''; image.style.display = src ? 'block' : 'none'; initial.style.display = src ? 'none' : 'inline'; };
+  const close = () => document.querySelectorAll('.profile-modal').forEach(modal => modal.hidden = true);
+  document.querySelectorAll('[data-open-modal]').forEach(button => button.addEventListener('click', () => { close(); document.getElementById(button.dataset.openModal).hidden = false; }));
+  document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', close));
+  document.querySelectorAll('.profile-modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) close(); }));
+  setAvatar(localStorage.getItem(key));
+  document.getElementById('saveAvatarButton')?.addEventListener('click', () => { const file = document.getElementById('avatarFileInput').files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { localStorage.setItem(key, reader.result); setAvatar(reader.result); close(); }; reader.readAsDataURL(file); });
+  document.getElementById('removeAvatarButton')?.addEventListener('click', () => { localStorage.removeItem(key); setAvatar(''); close(); });
+  if (/*[[${alertError != null}]]*/ false) document.getElementById('editProfileModal').hidden = false;
+});
+</script>
+</body></html>

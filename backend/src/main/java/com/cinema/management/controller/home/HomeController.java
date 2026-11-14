@@ -46,7 +46,9 @@ public class HomeController {
         var movie = home.getMovieDetails(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         model.addAttribute("movie", movie);
-        model.addAttribute("reviewForm", new MovieReviewFormViewModel());
+        var reviewForm = new MovieReviewFormViewModel();
+        reviewForm.setMovieId(id);
+        model.addAttribute("reviewForm", reviewForm);
         model.addAttribute("canReview", home.isActiveUser(currentUserId(request)));
         return "home/details";
     }

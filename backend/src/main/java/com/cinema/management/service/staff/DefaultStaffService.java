@@ -280,8 +280,8 @@ public class DefaultStaffService implements StaffService {
         if (movie.getLanguage() != null) { value.setLanguageId(movie.getLanguage().getLanguageId()); value.setLanguageName(movie.getLanguage().getLanguageName()); }
         if (movie.getCountry() != null) { value.setCountryId(movie.getCountry().getCountryId()); value.setCountryName(movie.getCountry().getCountryName()); }
         value.setGenre(joinGenres(movie.getMovieId()));
-        value.setMovieDirector(joinPeople(movieDirectors.findByMovieId(movie.getMovieId()).stream().map(MovieDirector::getPerson).toList()));
-        value.setMovieCast(joinPeople(movieCasts.findByMovieId(movie.getMovieId()).stream().map(MovieCast::getPerson).toList()));
+        value.setMovieDirector(String.join(", ", movieDirectors.findPersonNamesByMovieId(movie.getMovieId())));
+        value.setMovieCast(String.join(", ", movieCasts.findPersonNamesByMovieId(movie.getMovieId())));
         return value;
     }
 
@@ -369,7 +369,6 @@ public class DefaultStaffService implements StaffService {
     private List<String> names(String value) { if (!text(value)) return List.of(); return Arrays.stream(value.split(",")).map(String::trim).filter(this::text)
             .collect(Collectors.collectingAndThen(Collectors.toMap(item -> item.toLowerCase(Locale.ROOT), Function.identity(), (a, b) -> a, LinkedHashMap::new), map -> new ArrayList<>(map.values()))); }
     private String joinGenres(int movieId) { return movieGenres.findByMovieId(movieId).stream().map(MovieGenre::getGenre).filter(Objects::nonNull).map(Genre::getName).collect(Collectors.joining(", ")); }
-    private String joinPeople(List<Person> values) { return values.stream().filter(Objects::nonNull).map(Person::getFullName).collect(Collectors.joining(", ")); }
     private LocalDateTime parseStart(LocalDate date, String value) { try { return LocalDateTime.of(date, LocalTime.parse(value)); } catch (DateTimeParseException ignored) { return LocalDateTime.parse(value); } }
     private BigDecimal basePrice(String room, LocalDate date) { boolean weekend = date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY;
         if (isImax(room)) return BigDecimal.valueOf(weekend ? 165_000 : 135_000); return BigDecimal.valueOf(weekend ? 85_000 : 65_000); }

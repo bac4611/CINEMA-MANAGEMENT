@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout(~{::title}, ~{::link}, ~{::main}, ~{::script})}">
+<head>
+  <title>Phim - COSMOS Cinema</title>
+  <link rel="stylesheet" th:href="@{/css/movie.css}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+<main class="movies-page movie-page">
+  <section class="movie-hero" th:if="${!#lists.isEmpty(movies)}" aria-label="Phim nổi bật">
+    <div class="movie-hero__viewport" id="movieHeroTrack">
+      <article th:each="movie,stat : ${movies}"
+               class="movie-hero__slide"
+               th:classappend="${stat.first} ? ' is-active'"
+               th:style="|--hero-poster:url('${#strings.isEmpty(movie.posterUrl) ? '/images/posters/poster1.png' : movie.posterUrl}')|"
+               th:attr="aria-hidden=${!stat.first}">
+        <div class="movie-hero__content">
+          <span class="movie-eyebrow movie-eyebrow--live">COSMOS tuyển chọn</span>
+          <h1 th:text="${movie.title}"></h1>
+          <p class="movie-hero__tagline" th:text="${#strings.abbreviate(movie.synopsis,240)}"></p>
+          <div class="movie-hero__meta">
+            <span th:if="${!#strings.isEmpty(movie.genre)}" th:text="${movie.genre}"></span>
+            <span th:text="|${movie.duration} phút|"></span>
+            <span th:if="${!#strings.isEmpty(movie.ageRating)}" th:text="${movie.ageRating}"></span>
+          </div>
+          <div class="movie-hero__actions">
+            <a class="movie-btn movie-btn--primary" th:href="@{/Home/Details(id=${movie.movieId})}">Chi tiết</a>
+            <form th:action="@{/Booking/SelectShowtime}" method="get">
+              <input type="hidden" name="movieId" th:value="${movie.movieId}">
+              <button class="movie-btn movie-btn--ghost" type="submit">Đặt vé</button>
+            </form>
+          </div>
+        </div>
+        <a class="movie-hero__poster" th:href="@{/Home/Details(id=${movie.movieId})}">
+          <img th:src="${#strings.isEmpty(movie.posterUrl) ? '/images/posters/poster1.png' : movie.posterUrl}"
+               th:alt="|Poster ${movie.title}|">
+        </a>
+      </article>
+    </div>
+    <button type="button" class="movie-hero__arrow movie-hero__arrow--prev" data-movie-slide="-1" aria-label="Phim trước">‹</button>
+    <button type="button" class="movie-hero__arrow movie-hero__arrow--next" data-movie-slide="1" aria-label="Phim tiếp theo">›</button>
+    <div class="movie-hero__dots" aria-label="Chọn phim nổi bật">
+      <button th:each="movie,stat : ${movies}" type="button" class="movie-hero__dot"
+              th:classappend="${stat.first} ? ' is-active'"
+              th:attr="data-movie-dot=${stat.index},aria-label=|Phim ${stat.count}|,aria-current=${stat.first}"></button>
+    </div>
+  </section>
+
+  <section class="movie-section movie-catalog">
+    <div class="movie-shell">
+      <header class="movie-section__header movie-section__header--large">
+        <div><span class="movie-eyebrow">Tại rạp</span><h2>Phim đang chiếu</h2><p>Chọn bộ phim và suất chiếu phù hợp với bạn.</p></div>
+      </header>
+      <div th:if="${!#lists.isEmpty(allNowShowingMovies)}" class="movie-card-grid movie-card-grid--wide">
+        <article th:each="movie : ${allNowShowingMovies}" class="movie-card">
+          <a class="movie-card__poster" th:href="@{/Home/Details(id=${movie.movieId})}">
+            <img th:src="${#strings.isEmpty(movie.posterUrl) ? '/images/posters/poster1.png' : movie.posterUrl}"
+                 th:alt="${movie.title}" loading="lazy">
+          </a>
+          <div class="movie-card__body">
+            <span class="movie-age" th:if="${!#strings.isEmpty(movie.ageRating)}" th:text="${movie.ageRating}"></span>
+            <a class="movie-card__title" th:href="@{/Home/Details(id=${movie.movieId})}" th:text="${movie.title}"></a>
+            <p th:text="|${movie.genre} · ${movie.duration} phút|"></p>
+            <div class="movie-card__rating"><span><i class="fa-solid fa-star"></i><span th:text="${movie.reviewCount > 0 ? #numbers.formatDecimal(movie.averageRating,1,1) : 'Mới'}"></span></span></div>
+            <div class="movie-card__actions">
+              <a class="movie-card__button movie-card__button--outline" th:href="@{/Home/Details(id=${movie.movieId})}">Chi tiết</a>
+              <form th:action="@{/Booking/SelectShowtime}" method="get">
+                <input type="hidden" name="movieId" th:value="${movie.movieId}">
+                <button class="movie-card__button" type="submit">Đặt vé</button>
+              </form>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div th:if="${#lists.isEmpty(allNowShowingMovies)}" class="movie-empty"><h3>Chưa có phim đang chiếu.</h3></div>
+    </div>
+  </section>
+
+  <section class="movie-section movie-catalog movie-catalog--coming">
+    <div class="movie-shell">
+      <header class="movie-section__header">
+        <div><span class="movie-eyebrow movie-eyebrow--upcoming">Sắp ra mắt</span><h2>Phim sắp chiếu</h2><p>Khám phá những câu chuyện chuẩn bị lên màn ảnh lớn.</p></div>
+      </header>
+      <div th:if="${!#lists.isEmpty(allComingSoonMovies)}" class="movie-card-grid movie-card-grid--wide">
+        <article th:each="movie : ${allComingSoonMovies}" class="movie-card">
+          <a class="movie-card__poster" th:href="@{/Home/Details(id=${movie.movieId})}">
+            <img th:src="${#strings.isEmpty(movie.posterUrl) ? '/images/posters/poster1.png' : movie.posterUrl}"
+                 th:alt="${movie.title}" loading="lazy">
+          </a>
+          <div class="movie-card__body">
+            <span class="movie-date-badge" th:text="|Khởi chiếu ${#temporals.format(movie.releaseDate,'dd/MM/yyyy')}|"></span>
+            <a class="movie-card__title" th:href="@{/Home/Details(id=${movie.movieId})}" th:text="${movie.title}"></a>
+            <p th:text="${movie.genre}"></p>
+            <a class="movie-card__button movie-card__button--outline" th:href="@{/Home/Details(id=${movie.movieId})}">Xem chi tiết</a>
+          </div>
+        </article>
+      </div>
+      <div th:if="${#lists.isEmpty(allComingSoonMovies)}" class="movie-empty"><h3>Chưa có phim sắp chiếu.</h3></div>
+    </div>
+  </section>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const viewport = document.getElementById('movieHeroTrack');
+  if (!viewport) return;
+  const slides = [...viewport.querySelectorAll('.movie-hero__slide')];
+  const dots = [...document.querySelectorAll('[data-movie-dot]')];
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let current = 0;
+  let timer = null;
+
+  const show = index => {
+    current = (index + slides.length) % slides.length;
+    slides.forEach((slide, position) => {
+      const active = position === current;
+      slide.classList.toggle('is-active', active);
+      slide.setAttribute('aria-hidden', String(!active));
+    });
+    dots.forEach((dot, position) => {
+      const active = position === current;
+      dot.classList.toggle('is-active', active);
+      dot.setAttribute('aria-current', String(active));
+    });
+  };
+
+  const stop = () => {
+    if (timer) window.clearInterval(timer);
+    timer = null;
+  };
+  const start = () => {
+    stop();
+    if (!reduceMotion.matches && slides.length > 1) timer = window.setInterval(() => show(current + 1), 7000);
+  };
+
+  document.querySelectorAll('[data-movie-slide]').forEach(button => button.addEventListener('click', () => {
+    show(current + Number(button.dataset.movieSlide));
+    start();
+  }));
+  dots.forEach(dot => dot.addEventListener('click', () => {
+    show(Number(dot.dataset.movieDot));
+    start();
+  }));
+  viewport.addEventListener('mouseenter', stop);
+  viewport.addEventListener('mouseleave', start);
+  viewport.addEventListener('focusin', stop);
+  viewport.addEventListener('focusout', start);
+  document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
+  show(0);
+  start();
+});
+</script>
+</body>
+</html>

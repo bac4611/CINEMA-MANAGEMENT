@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/staff :: layout(~{::title}, 'concessions', ~{::main}, ~{::scripts})}">
+<head><title>Quản lý đồ ăn uống</title></head>
+<body>
+<main>
+    <header class="staff-header">
+        <div style="display:flex;align-items:center;gap:16px"><h2>QUẢN LÝ ĐỒ ĂN/UỐNG</h2><span class="badge badge-outline"><i class="status-dot"></i> DATABASE CONNECTED</span></div>
+        <a class="btn-primary" th:href="@{/Staff/CreateConcession}">+ THÊM MÓN</a>
+    </header>
+    <div class="staff-alert staff-alert-success" th:if="${alertSuccess}" th:text="${alertSuccess}"></div>
+    <div class="staff-alert staff-alert-error" th:if="${alertError}" th:text="${alertError}"></div>
+
+    <div class="concessions-layout" style="grid-template-columns:minmax(0,1fr)">
+        <div class="concessions-main">
+            <div class="pos-stats">
+                <div class="stat-card"><p class="stat-label">DOANH THU THÁNG NÀY</p><h3 th:text="|${#numbers.formatDecimal(concessions.monthlyRevenue, 0, 'POINT', 0, 'COMMA')} VND|">0 VND</h3></div>
+                <div class="stat-card"><p class="stat-label">TỔNG SỐ GIAO DỊCH</p><h3 th:text="|${concessions.totalTransactions} GIAO DỊCH|">0 GIAO DỊCH</h3></div>
+                <div class="stat-card"><p class="stat-label">GIÁ TRỊ TRUNG BÌNH MỖI ĐƠN</p><h3 th:text="|${#numbers.formatDecimal(concessions.averageOrderValue, 0, 'POINT', 0, 'COMMA')} VND|">0 VND</h3></div>
+            </div>
+            <div class="concessions-grid">
+                <div class="concessions-empty" th:if="${#lists.isEmpty(concessions.items)}">Chưa có món ăn uống nào trong database.</div>
+                <article class="concession-item concession-card" th:each="item : ${concessions.items}" th:data-combo-id="${item.comboId}" data-category="all">
+                    <div class="item-img-wrap concession-placeholder" aria-hidden="true"><span th:text="${#strings.length(item.comboName) >= 2 ? #strings.substring(item.comboName,0,2).toUpperCase() : item.comboName.toUpperCase()}">CB</span></div>
+                    <div class="item-info">
+                        <div class="item-header">
+                            <div style="display:flex;flex-direction:column;gap:6px"><h4 th:text="${item.comboName}">Combo</h4><span style="font-size:13px;color:#999" th:text="|Số lượng: ${item.quantity}|">Số lượng: 0</span></div>
+                            <span class="item-price" th:text="|${#numbers.formatDecimal(item.comboPrice, 0, 'POINT', 0, 'COMMA')} VND|">0 VND</span>
+                        </div>
+                        <div class="concession-actions"><a class="btn-edit-concession" th:href="@{/Staff/EditConcession(id=${item.comboId})}">Sửa</a></div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop show" th:if="${concessionFormMode != null}">
+        <div class="modal-dialog">
+            <div class="modal-header"><div><p class="modal-pretitle">BẮP NƯỚC</p><h3 th:text="${concessionFormMode == 'edit' ? 'Sửa món' : 'Thêm món'}">Thêm món</h3></div><a class="btn-close-modal" th:href="@{/Staff/Concessions}" aria-label="Đóng">×</a></div>
+            <form th:object="${concessions.form}" th:action="${concessionFormMode == 'edit'} ? @{/Staff/EditConcession} : @{/Staff/CreateConcession}" method="post">
+                <input type="hidden" th:field="*{comboId}">
+                <div class="modal-body">
+                    <div class="form-group"><label for="comboName">Tên món</label><input id="comboName" th:field="*{comboName}" maxlength="150" required><span class="text-danger" th:errors="*{comboName}"></span></div>
+                    <div class="form-group"><label for="comboPrice">Giá món</label><input id="comboPrice" th:field="*{comboPrice}" type="number" min="0.01" step="0.01" required><span class="text-danger" th:errors="*{comboPrice}"></span></div>
+                    <div class="form-group"><label for="quantity">Số lượng</label><input id="quantity" th:field="*{quantity}" type="number" min="0" step="1" required><span class="text-danger" th:errors="*{quantity}"></span></div>
+                </div>
+                <div class="modal-footer"><a class="btn-secondary btn-close-modal" th:href="@{/Staff/Concessions}">Hủy</a><button class="btn-primary" type="submit" th:text="${concessionFormMode == 'edit' ? 'Cập nhật' : 'Thêm món'}">Lưu</button></div>
+            </form>
+        </div>
+    </div>
+</main>
+<th:block th:fragment="scripts"><script th:src="@{/js/staff-concessions.js}"></script></th:block>
+</body>
+</html>

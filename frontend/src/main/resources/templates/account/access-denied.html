@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout(~{::title}, ~{::link}, ~{::main}, ~{::script})}">
+<head><title>Không có quyền truy cập - COSMOS Cinema</title><link rel="stylesheet" th:href="@{/css/auth.css}"></head>
+<body>
+<main>
+    <section class="auth-wrapper"><div class="auth-container"><div class="auth-card">
+        <p class="auth-form-kicker">COSMOS CINEMA</p>
+        <h1 class="auth-state-title">Không có quyền truy cập</h1>
+        <p class="auth-state-text">Tài khoản của bạn không có quyền truy cập trang này.</p>
+        <a class="btn btn-submit auth-state-action" th:href="@{/Home/Index}">Về trang chủ</a>
+    </div></div></section>
+</main>
+<script></script>
+</body></html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="layout(pageTitle, pageStyles, content, pageScripts)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:replace="${pageTitle}">COSMOS Cinema</title>
+    <link rel="icon" th:href="@{/images/common/cosmos.png}">
+    <link rel="stylesheet" th:href="@{/vendor/bootstrap/dist/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/site.css}">
+    <link rel="stylesheet" th:href="@{/css/layout.css}">
+    <th:block th:replace="${pageStyles}"></th:block>
+</head>
+<body>
+<header class="cosmos-site-header">
+    <nav class="navbar navbar-expand-lg navbar-dark custom-navbar">
+        <div class="container-fluid px-4 py-2">
+            <a class="navbar-brand cosmos-logo" th:href="@{/Home/Index}">
+                <img th:src="@{/images/common/cosmos.png}" alt="COSMOS Cinema">
+            </a>
+            <div class="d-none d-lg-flex gap-4 ms-5 me-auto">
+                <a class="cosmos-nav-link" th:href="@{/Home/Movie}">Phim</a>
+                <a class="cosmos-nav-link" th:href="@{/Home/TicketPricing}">Giá vé</a>
+                <a class="cosmos-nav-link" th:href="@{/Booking/Index}">Đặt vé</a>
+            </div>
+            <div class="d-flex align-items-center gap-2" th:if="${session.UserEmail != null}">
+                <span class="cosmos-welcome">
+                    <span class="cosmos-welcome-label">Chào mừng</span>
+                    <span class="cosmos-welcome-name"
+                          th:text="${session.UserFullName != null ? session.UserFullName : session.UserEmail}">Khách hàng</span>
+                </span>
+                <a class="cosmos-profile-button" th:href="@{/Account/Profile}" aria-label="Trang cá nhân">
+                    <span class="cosmos-profile-avatar"
+                          th:text="${#strings.substring(session.UserFullName != null ? session.UserFullName : session.UserEmail, 0, 1).toUpperCase()}">C</span>
+                </a>
+                <form th:action="@{/Account/Logout}" method="post">
+                    <button type="submit" class="cosmos-icon-button cosmos-logout-button" aria-label="Đăng xuất">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.75A2.75 2.75 0 0 0 7.25 7.5v9A2.75 2.75 0 0 0 10 19.25h2a.75.75 0 0 1 0 1.5h-2a4.25 4.25 0 0 1-4.25-4.25v-9A4.25 4.25 0 0 1 10 3.25h2a.75.75 0 0 1 0 1.5h-2Z"/><path d="m15.47 7.47 4 4a.75.75 0 0 1 0 1.06l-4 4-1.06-1.06 2.72-2.72H10.5v-1.5h6.63l-2.72-2.72 1.06-1.06Z"/></svg>
+                    </button>
+                </form>
+            </div>
+            <a th:if="${session.UserEmail == null}" class="cosmos-icon-button cosmos-login-button"
+               th:href="@{/Account/Login}" aria-label="Đăng nhập">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6 5c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4Z"/></svg>
+            </a>
+        </div>
+    </nav>
+</header>
+
+<main th:replace="${content}"></main>
+
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index:9999">
+    <div class="toast text-bg-success show" th:if="${alertSuccess != null or successMessage != null}">
+        <div class="d-flex"><div class="toast-body" th:text="${alertSuccess != null ? alertSuccess : successMessage}">Thành công</div>
+            <button type="button" class="btn-close btn-close-white m-auto me-2" data-bs-dismiss="toast"></button></div>
+    </div>
+    <div class="toast text-bg-danger show" th:if="${alertError != null}">
+        <div class="d-flex"><div class="toast-body" th:text="${alertError}">Có lỗi xảy ra</div>
+            <button type="button" class="btn-close btn-close-white m-auto me-2" data-bs-dismiss="toast"></button></div>
+    </div>
+</div>
+
+<footer class="cosmos-account-footer">
+    <span th:text="'© ' + ${#dates.year(#dates.createNow())} + ' COSMOS CINEMA'">COSMOS CINEMA</span>
+    <a th:href="@{/Home/Index}">Trang chủ</a>
+</footer>
+
+<div th:replace="~{fragments/chatbot :: widget}"></div>
+
+<script th:src="@{/vendor/bootstrap/dist/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/site.js}"></script>
+<th:block th:replace="${pageScripts}"></th:block>
+</body>
+</html>

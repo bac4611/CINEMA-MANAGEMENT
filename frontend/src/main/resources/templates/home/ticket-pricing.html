@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout(~{::title}, ~{::link}, ~{::main}, ~{::script})}">
+<head>
+  <title>Bảng giá vé - COSMOS Cinema</title>
+  <link rel="stylesheet" th:href="@{/css/home.css}">
+  <link rel="stylesheet" th:href="@{/css/ticketprice.css}">
+</head>
+<body>
+<main class="ticket-page" th:with="pricing=${ticketPricing}">
+  <div class="ticket-main">
+    <section class="ticket-hero">
+      <h1>Bảng Giá Vé</h1>
+      <p>Trải nghiệm điện ảnh với mức giá minh bạch theo định dạng phim và hạng ghế.</p>
+    </section>
+    <section class="pricing-card" aria-labelledby="pricing-title">
+      <span class="pricing-card__glow" aria-hidden="true"></span>
+      <h2 id="pricing-title" class="visually-hidden">Giá vé theo định dạng phim</h2>
+      <div class="pricing-tabs-wrap">
+        <div class="pricing-tabs" role="tablist">
+          <button th:each="format,stat : ${pricing.movieFormats}"
+                  type="button" class="pricing-tab"
+                  th:classappend="${stat.first} ? ' is-active'"
+                  th:attr="data-pricing-tab=${format.id},aria-selected=${stat.first},aria-controls=|pricing-${format.id}|"
+                  th:text="${format.tabLabel}"></button>
+        </div>
+      </div>
+      <section th:each="format,stat : ${pricing.movieFormats}"
+               class="pricing-panel"
+               th:id="|pricing-${format.id}|"
+               th:hidden="${!stat.first}"
+               th:attr="data-pricing-panel=${format.id}">
+        <div class="pricing-scroll">
+          <table class="pricing-table pricing-table--day-seat">
+            <thead><tr><th>Loại ghế</th><th>Giá cơ bản</th><th>Ngày thường</th><th>Cuối tuần / ngày lễ</th></tr></thead>
+            <tbody>
+              <tr th:each="seat : ${format.seatPrices}">
+                <td th:text="${seat.seatType}"></td>
+                <td th:text="${#numbers.formatDecimal(seat.basePrice,0,'POINT',0,'COMMA')} + ' ₫'"></td>
+                <td th:text="${#numbers.formatDecimal(seat.normalDay,0,'POINT',0,'COMMA')} + ' ₫'"></td>
+                <td th:text="${#numbers.formatDecimal(seat.weekendOrHoliday,0,'POINT',0,'COMMA')} + ' ₫'"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <div class="pricing-notes"><p th:each="note : ${pricing.footnotes}" th:text="|* ${note}|"></p></div>
+    </section>
+  </div>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const tabs = [...document.querySelectorAll('[data-pricing-tab]')];
+  const panels = [...document.querySelectorAll('[data-pricing-panel]')];
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    tabs.forEach(item => {
+      const active = item === tab;
+      item.classList.toggle('is-active', active);
+      item.setAttribute('aria-selected', String(active));
+    });
+    panels.forEach(panel => {
+      const active = panel.dataset.pricingPanel === tab.dataset.pricingTab;
+      panel.hidden = !active;
+      if (active) panel.animate([
+        { opacity: 0, transform: 'translateY(10px)' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], { duration: 260, easing: 'cubic-bezier(.16,1,.3,1)' });
+    });
+  }));
+});
+</script>
+</body>
+</html>

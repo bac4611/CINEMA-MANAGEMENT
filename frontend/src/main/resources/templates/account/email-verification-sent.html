@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout(~{::title}, ~{::link}, ~{::main}, ~{::script})}">
+<head><title>Xác minh email - COSMOS Cinema</title><link rel="stylesheet" th:href="@{/css/auth.css}"></head>
+<body><main>
+    <section class="auth-wrapper"><div class="auth-container"><div class="auth-card">
+        <h1 class="auth-state-title">Vui lòng kiểm tra email</h1>
+        <p class="auth-state-text">Chúng tôi đã gửi liên kết xác minh đến
+            <strong th:text="${#strings.isEmpty(email) ? 'email của bạn' : email}">email của bạn</strong>.
+            Hãy mở email và xác minh tài khoản.</p>
+        <form th:if="${!#strings.isEmpty(email)}" class="auth-state-form"
+              th:action="@{/Account/ResendVerificationEmail}" method="post">
+            <input type="hidden" name="email" th:value="${email}">
+            <button type="submit" class="btn btn-submit">Gửi lại email xác minh</button>
+        </form>
+        <a class="auth-secondary-link" th:href="@{/Account/Login}">Quay lại đăng nhập</a>
+    </div></div></section>
+</main><script></script></body></html>

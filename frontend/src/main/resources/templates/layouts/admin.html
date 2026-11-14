@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:fragment="layout(title, activeNav, content, scripts)">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:replace="${title}">Cosmos Cinema Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;600;700&amp;family=Manrope:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{background:'#131313','on-surface':'#e5e2e1','on-surface-variant':'#d5c3b8',primary:'#f4bb92','primary-container':'#8b5e3c','on-primary-container':'#ffe3d1','surface-container':'#201f1f','surface-container-low':'#1c1b1b','surface-container-lowest':'#0e0e0e','surface-container-high':'#2a2a2a','surface-variant':'#353534','outline-variant':'#51443c',outline:'#9e8e84',tertiary:'#f0bd8b',secondary:'#efbc98',error:'#ffb4ab'},fontFamily:{sans:['Manrope','sans-serif'],display:['Archivo Narrow','sans-serif'],mono:['JetBrains Mono','monospace']}}}};</script>
+  <style>
+    body{background:#131313;color:#e5e2e1;font-family:Manrope,sans-serif}.font-display-lg{font-family:'Archivo Narrow',sans-serif}.cinematic-glow{box-shadow:inset 0 1px rgba(255,255,255,.1)}.cinematic-input{background:transparent;border:0;border-bottom:1px solid #51443c;transition:.2s}.cinematic-input:focus{outline:0;border-bottom:2px solid #f4bb92;background:#353534}.auth-field-error{color:#ffb4ab;font-size:.78rem}.admin-modal[hidden]{display:none}.admin-sticky-header{position:sticky;top:0;z-index:40;padding:.75rem 0;background:rgba(19,19,19,.96);border-bottom:1px solid rgba(81,68,60,.45);backdrop-filter:blur(12px)}
+  </style>
+</head>
+<body class="h-screen overflow-hidden bg-background text-on-surface">
+<div class="flex min-h-screen overflow-hidden">
+  <aside class="hidden w-64 shrink-0 flex-col border-r border-outline-variant/30 bg-surface-container-lowest py-6 md:flex">
+    <a th:href="@{/Admin}" class="px-6 pb-6 no-underline"><span class="block font-display text-3xl font-bold uppercase leading-7 text-primary">Cosmos<br>Cinema</span></a>
+    <nav class="flex-1 space-y-2 px-4" th:with="nav=${activeNav}">
+      <a th:href="@{/Admin}" th:classappend="${nav == 'home'} ? ' bg-primary-container text-on-primary-container' : ' text-on-surface-variant hover:bg-surface-variant/30'" class="flex items-center gap-3 rounded-lg px-4 py-3 no-underline"><span class="material-symbols-outlined">home</span><span class="font-mono text-sm">Trang chủ</span></a>
+      <a th:href="@{/Admin/Analytics}" th:classappend="${nav == 'analytics'} ? ' bg-primary-container text-on-primary-container' : ' text-on-surface-variant hover:bg-surface-variant/30'" class="flex items-center gap-3 rounded-lg px-4 py-3 no-underline"><span class="material-symbols-outlined">analytics</span><span class="font-mono text-sm">Phân tích doanh thu</span></a>
+      <a th:href="@{/Admin/Staff}" th:classappend="${nav == 'staff'} ? ' bg-primary-container text-on-primary-container' : ' text-on-surface-variant hover:bg-surface-variant/30'" class="flex items-center gap-3 rounded-lg px-4 py-3 no-underline"><span class="material-symbols-outlined">badge</span><span class="font-mono text-sm">Quản lý nhân viên</span></a>
+      <a th:href="@{/Admin/Settings}" th:classappend="${nav == 'settings'} ? ' bg-primary-container text-on-primary-container' : ' text-on-surface-variant hover:bg-surface-variant/30'" class="flex items-center gap-3 rounded-lg px-4 py-3 no-underline"><span class="material-symbols-outlined">settings</span><span class="font-mono text-sm">Cài đặt</span></a>
+    </nav>
+    <div class="border-t border-outline-variant/20 p-6 text-center">
+      <span class="material-symbols-outlined mb-2 rounded-full border border-outline-variant p-2">person</span>
+      <p class="font-mono text-xs" th:text="${session.UserEmail ?: 'System Admin'}">Admin</p>
+      <form th:action="@{/Account/Logout}" method="post" class="mt-4"><button class="rounded bg-primary-container px-6 py-2 font-mono text-xs text-on-primary-container">Đăng xuất</button></form>
+    </div>
+  </aside>
+  <main class="h-screen flex-1 overflow-y-auto p-6 md:p-12">
+    <header class="admin-sticky-header mb-10 flex items-center justify-between"><a th:href="@{/Admin}" class="font-display text-2xl font-bold uppercase text-primary no-underline md:hidden">Cosmos Cinema</a><span class="hidden md:block"></span><span class="material-symbols-outlined text-on-surface-variant">notifications</span></header>
+    <div th:replace="${content}"></div>
+  </main>
+</div>
+<th:block th:replace="${scripts}"></th:block>
+</body>
+</html>

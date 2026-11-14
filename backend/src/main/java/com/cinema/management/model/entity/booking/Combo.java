@@ -24,6 +24,7 @@ public class Combo {
     @Min(value = 0, message = "Số lượng không được nhỏ hơn 0.")
     private int quantity;
     @Min(0)
+    @Column(name = "StockQuantity")
     private int reservedQuantity;
 
     @OneToMany(mappedBy = "combo")

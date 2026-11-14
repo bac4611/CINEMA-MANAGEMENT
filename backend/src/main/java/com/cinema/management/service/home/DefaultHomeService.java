@@ -193,12 +193,12 @@ public class DefaultHomeService implements HomeService {
         model.setGenre(movieGenres.findByMovieId(movie.getMovieId()).stream()
                 .map(MovieGenre::getGenre).filter(Objects::nonNull).map(Genre::getName)
                 .collect(Collectors.joining(", ")));
-        model.setMovieDirector(movieDirectors.findByMovieId(movie.getMovieId()).stream()
-                .map(MovieDirector::getPerson).filter(Objects::nonNull).map(Person::getFullName)
-                .collect(Collectors.joining(", ")));
-        model.setMovieCast(movieCasts.findByMovieId(movie.getMovieId()).stream()
-                .map(MovieCast::getPerson).filter(Objects::nonNull).map(Person::getFullName)
-                .collect(Collectors.joining(", ")));
+        // Inner joins intentionally ignore orphaned MovieDirectors/MovieCasts rows.
+        // Historical data must not make the public movie catalogue fail to render.
+        model.setMovieDirector(String.join(", ",
+                movieDirectors.findPersonNamesByMovieId(movie.getMovieId())));
+        model.setMovieCast(String.join(", ",
+                movieCasts.findPersonNamesByMovieId(movie.getMovieId())));
         model.setShowtimes(showtimes.findByMovieMovieIdOrderByDateAscStartTimeAsc(movie.getMovieId())
                 .stream().map(showtime -> {
                     ShowtimeChoiceViewModel choice = new ShowtimeChoiceViewModel();

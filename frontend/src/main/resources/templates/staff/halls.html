@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/staff :: layout(~{::title}, 'halls', ~{::main}, ~{::scripts})}">
+<head><title>Quản lý phòng chiếu</title></head>
+<body>
+<main>
+    <header class="staff-header">
+        <div style="display:flex;align-items:center;gap:16px">
+            <h2>SCREENING ROOMS</h2>
+            <span class="badge badge-outline"><i class="status-dot"></i> DATABASE CONNECTED</span>
+        </div>
+        <a class="btn-secondary" th:href="@{/Staff/Index}" style="text-decoration:none">SCHEDULE</a>
+    </header>
+
+    <div class="halls-layout" th:if="${#lists.isEmpty(halls.rooms)}">
+        <div class="editor-panel"><p class="tool-label">Không tìm thấy phòng chiếu trong database.</p></div>
+    </div>
+
+    <div class="halls-shell" th:unless="${#lists.isEmpty(halls.rooms)}">
+        <aside class="screening-room-sidebar">
+            <div class="room-sidebar-header"><span>ROOMS</span><strong th:text="${#lists.size(halls.rooms)}">0</strong></div>
+            <div class="room-sidebar-list">
+                <button th:each="room, stat : ${halls.rooms}" type="button"
+                        class="room-sidebar-item" th:classappend="${stat.first} ? ' active'"
+                        data-screening-room-button
+                        th:data-room-id="${room.roomId}" th:data-room-name="${room.roomName}">
+                    <span class="room-sidebar-name" th:text="${room.roomName}">Phòng</span>
+                    <span class="room-sidebar-meta">
+                        <span th:text="|${room.seatCount} seats|">0 seats</span>
+                        <span th:text="|${room.reservationCount} reservations|">0 reservations</span>
+                    </span>
+                </button>
+            </div>
+        </aside>
+
+        <section class="hall-workspace">
+            <div class="hall-management-grid">
+                <section class="screening-seat-panel screening-seat-panel-management" aria-label="Sơ đồ ghế">
+                    <div class="screening-seat-header">
+                        <div><p class="tool-label">CINEMA MANAGEMENT</p><h3 id="screeningRoomTitle" th:text="${halls.rooms[0].roomName}">Screening room</h3></div>
+                        <div class="screening-seat-controls">
+                            <label>NGÀY <input type="date" id="screeningShowtimeDate"></label>
+                            <label>LỊCH CHIẾU
+                                <select id="screeningShowtimeSelect" disabled><option value="">Không có suất chiếu</option></select>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="screening-seat-stats" id="screeningSeatStats">
+                        <span>Total <strong data-seat-count="total">0</strong></span>
+                        <span>Regular <strong data-seat-count="regular">0</strong></span>
+                        <span>VIP <strong data-seat-count="vip">0</strong></span>
+                        <span>Couple <strong data-seat-count="couple">0</strong></span>
+                        <span>Reserved <strong data-seat-count="reserved">0</strong></span>
+                        <span>Pending <strong data-seat-count="pending">0</strong></span>
+                        <span>Available <strong data-seat-count="available">0</strong></span>
+                    </div>
+                    <div class="screening-seat-message" id="screeningSeatMessage">Chọn phòng để tải sơ đồ ghế.</div>
+                    <div class="screening-seat-map seat-card" id="screeningSeatMap" hidden>
+                        <div class="screen-wrap"><div class="screen"></div><div class="screen-label">MÀN HÌNH CHIẾU</div></div>
+                        <div class="seat-matrix screening-seat-grid" id="screeningSeatGrid"></div>
+                        <div class="legend" aria-label="Chú thích trạng thái ghế">
+                            <span><i></i>Available</span><span><i class="selected-key"></i>Reserved</span>
+                            <span><i class="pending-key"></i>Pending</span><span><i class="sweet-key"></i>Couple</span>
+                        </div>
+                    </div>
+                </section>
+                <aside class="reservations-panel">
+                    <div class="reservations-header"><span>RESERVATIONS</span><strong id="screeningReservationTicketCount">0 tickets</strong></div>
+                    <div id="screeningReservationList"><div class="reservation-empty">Không có đặt chỗ cho suất chiếu này.</div></div>
+                </aside>
+            </div>
+        </section>
+    </div>
+</main>
+<th:block th:fragment="scripts"><script th:src="@{/js/staff.js}"></script></th:block>
+</body>
+</html>
