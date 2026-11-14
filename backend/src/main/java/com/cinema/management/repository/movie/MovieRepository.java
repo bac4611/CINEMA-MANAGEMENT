@@ -12,9 +12,8 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
     List<Movie> findByTitleContainingIgnoreCaseOrderByReleaseDateDesc(String title);
     List<Movie> findByReleaseDateGreaterThanEqualOrderByReleaseDate(LocalDate releaseDate);
 
-    @EntityGraph(attributePaths = {
-            "country", "language", "movieGenres.genre", "movieCasts.person", "movieDirectors.person"
-    })
+    // Fetch only one List collection to avoid MultipleBagFetchException.
+    @EntityGraph(attributePaths = {"country", "language", "movieGenres.genre"})
     @Query("select m from Movie m where m.movieId = :movieId")
     Optional<Movie> findDetailsById(@Param("movieId") Integer movieId);
 

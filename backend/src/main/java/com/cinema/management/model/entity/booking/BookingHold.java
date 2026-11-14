@@ -6,6 +6,8 @@ import com.cinema.management.model.entity.theater.Showtime;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -30,7 +32,11 @@ public class BookingHold {
     private String status = "Pending";
     private Instant createdAtUtc;
     private Instant expiresAtUtc;
-    @Version private byte[] rowVersion;
+    // SQL Server generates ROWVERSION on every insert and update.
+    @Version
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @Column(name = "RowVersion", insertable = false, updatable = false)
+    private byte[] rowVersion;
 
     @OneToMany(mappedBy = "bookingHold")
     private List<BookingSeatHold> seatHolds = new ArrayList<>();

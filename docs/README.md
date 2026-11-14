@@ -7,6 +7,23 @@
 - `database`: SQL schema, seed, and test scripts.
 - `docker`: Backend and SQL Server container definitions.
 
+Frontend files live directly under `frontend`, without a Java source tree:
+
+```text
+backend/src/main/
+  java/
+  resources/
+    application.properties
+    application-dev.properties
+frontend/
+  templates/
+  static/
+```
+
+Maven copies `frontend/templates` and `frontend/static` into the backend
+classpath during the build. Application configuration lives in
+`backend/src/main/resources`.
+
 Run the project from the repository root:
 
 ```bash

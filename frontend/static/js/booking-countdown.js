@@ -5,20 +5,19 @@
     timers.forEach(timer => {
         const output = timer.querySelector("[data-countdown-value]");
         const expiresAt = Date.parse(timer.dataset.expiresAt || "");
-        const parsedServerNow = Date.parse(timer.dataset.serverNow || "");
-        const serverNow = Number.isNaN(parsedServerNow) ? Date.now() : parsedServerNow;
+        const serverNow = Date.parse(timer.dataset.serverNow || "");
         const expiredUrl = timer.dataset.expiredUrl;
         let redirected = false;
 
-        if (!output || Number.isNaN(expiresAt) || !expiredUrl) {
+        if (!output || Number.isNaN(expiresAt) || Number.isNaN(serverNow) || !expiredUrl) {
             return;
         }
 
         // HOLD CHANGE: bù sai lệch đồng hồ máy khách để thời gian hiển thị bám theo UTC của server.
-        const serverClockOffset = serverNow - Date.now();
+        const startedAt = performance.now();
 
         const render = () => {
-            const estimatedServerNow = Date.now() + serverClockOffset;
+            const estimatedServerNow = serverNow + (performance.now() - startedAt);
             const remainingMilliseconds = Math.max(0, expiresAt - estimatedServerNow);
             const remainingSeconds = Math.ceil(remainingMilliseconds / 1000);
             const minutes = Math.floor(remainingSeconds / 60);

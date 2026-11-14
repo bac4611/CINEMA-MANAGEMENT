@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chọn ghế | Cosmos Cinema</title><link rel="stylesheet" th:href="@{/css/select-seats.css}"></head>
+<body th:with="b=${booking}">
+<header class="site-header"><div class="shell header-row">
+<a th:href="@{/Home/Index}" class="brand"><span class="brand-mark" aria-hidden="true"></span> COSMOS CINEMA</a>
+<div class="booking-header-actions"><div th:replace="~{booking/_booking-timer :: timer(${b.bookingExpiresAtUtc})}"></div><form th:action="@{/Booking/CancelBooking}" method="post" class="cancel-form"><button type="submit" class="cancel-button" onclick="return confirm('Bạn có chắc muốn huỷ quá trình đặt vé?');">Huỷ</button></form></div>
+</div></header>
+<div class="stepper-wrap"><nav class="shell stepper" aria-label="Tiến trình đặt vé">
+<button type="button" class="stepper-button complete" disabled><span class="step-number">1</span><span class="step-label">Thông tin phim</span></button>
+<button type="button" class="stepper-button active" aria-current="step"><span class="step-number">2</span><span class="step-label">Ghế ngồi</span></button>
+<button type="button" class="stepper-button" disabled><span class="step-number">3</span><span class="step-label">Đồ ăn/uống</span></button>
+<button type="button" class="stepper-button" disabled><span class="step-number">4</span><span class="step-label">Thanh toán</span></button>
+</nav></div>
+<main class="shell"><div class="booking-step active" data-step="2">
+<header class="step-heading"><div><p class="eyebrow">Step 2 of 4 · Select seats</p><h2 style="font-size:40px" th:text="${b.movieTitle}"></h2><div class="movie-meta"><span class="meta-pill" th:text="|▣ ${b.selectedDate}|"></span><span class="meta-pill" th:text="|◷ ${b.selectedTime}|"></span><span class="meta-pill" th:text="|⌖ ${b.cinemaFormat}|"></span><span class="meta-pill" th:if="${!#strings.isEmpty(b.offerCode)}" th:text="|Ưu đãi ${b.offerCode}|"></span></div></div></header>
+<p class="card booking-alert" th:if="${alertError}" th:text="${alertError}" role="alert"></p><p id="seatError" class="booking-alert" role="alert" hidden></p>
+<form th:action="@{/Booking/SelectSeats}" method="post" id="seatForm" th:attr="data-hold-url=@{/Booking/HoldSeat}">
+<section class="card seat-card" aria-label="Sơ đồ ghế"><div class="screen-wrap"><div class="screen"></div><div class="screen-label">MÀN HÌNH CHIẾU</div></div>
+<div class="seat-matrix"><div class="seat-row" th:each="row : ${seatRows}" th:classappend="${row.value[0].seatType == 'Couple'} ? 'sweetbox-row'"><span class="row-label" th:text="${row.key}"></span>
+<button type="button" th:each="seat : ${row.value}" class="seat"
+ th:classappend="|${seat.seatType == 'Couple' ? 'couple sweetbox' : (seat.seatType == 'VIP' ? 'vip' : 'regular')} ${seat.occupied ? 'occupied' : ''} ${seat.selected ? 'selected' : ''}|"
+ th:disabled="${seat.occupied}" th:attr="data-seat-id=${seat.seatId},data-seat-code=${seat.seatCode},data-price=${seat.price},data-seat-type=${seat.seatType},aria-label=|Ghế ${seat.seatCode}|,aria-pressed=${seat.selected},title=|Ghế ${seat.seatCode} · ${seat.seatType}|"
+ th:text="${seat.seatType == 'Regular' ? '' : seat.seatCode}"></button></div></div>
+<div class="legend"><span><i></i>Ghế thường</span><span><i class="vip-key"></i>VIP</span><span><i class="sweet-key"></i>Ghế đôi</span></div></section>
+<aside class="card summary-card"><h3 class="summary-title">Đặt Ghế</h3><span class="summary-label">Ghế đã chọn</span>
+<div class="selected-list" id="selectedSeatsList" aria-live="polite"><div th:if="${#lists.isEmpty(b.selectedSeats)}" class="empty-state">Chọn ghế từ sơ đồ</div><div th:each="code : ${b.selectedSeats}" class="selected-line"><span th:text="|Ghế ${code}|"></span><span th:text="${#numbers.formatDecimal(b.seatPrice(code),0,'POINT',0,'COMMA')} + ' ₫'"></span></div></div>
+<div class="totals"><div class="total-line"><span id="ticketCount" th:text="|Số lượng ghế (${#lists.size(b.selectedSeats)})|"></span><span id="ticketSubtotal" th:text="${#numbers.formatDecimal(b.ticketSubtotal,0,'POINT',0,'COMMA')} + ' ₫'"></span></div></div>
+<div class="summary-actions"><button type="submit" class="primary-button full" id="confirmSeatButton" th:disabled="${#lists.isEmpty(b.selectedSeats)}">Xác nhận đặt ghế →</button><a class="secondary-button full" th:href="@{/Booking/SelectShowtime(movieId=${b.movieId})}">← Thay đổi suất chiếu</a></div><p class="secure-note">▱ Giao dịch được bảo mật</p></aside>
+</form></div></main><script th:src="@{/js/select-seats.js}" defer></script></body></html>

@@ -12,6 +12,8 @@ import com.cinema.management.model.viewmodel.booking.*;
 import com.cinema.management.repository.account.UserRepository;
 import com.cinema.management.repository.booking.*;
 import com.cinema.management.repository.movie.MovieRepository;
+import com.cinema.management.repository.movie.MovieCastRepository;
+import com.cinema.management.repository.movie.MovieDirectorRepository;
 import com.cinema.management.repository.payment.*;
 import com.cinema.management.repository.theater.*;
 import tools.jackson.core.JacksonException;
@@ -43,6 +45,8 @@ public class DefaultBookingService implements BookingService {
 
     private final UserRepository users;
     private final MovieRepository movies;
+    private final MovieCastRepository movieCasts;
+    private final MovieDirectorRepository movieDirectors;
     private final ShowtimeRepository showtimes;
     private final RoomRepository rooms;
     private final SeatRepository seats;
@@ -61,6 +65,7 @@ public class DefaultBookingService implements BookingService {
     private final Environment environment;
 
     public DefaultBookingService(UserRepository users, MovieRepository movies,
+                                 MovieCastRepository movieCasts, MovieDirectorRepository movieDirectors,
                                  ShowtimeRepository showtimes, RoomRepository rooms,
                                  SeatRepository seats, SeatTypePricingRepository pricing,
                                  BookingHoldRepository holds, BookingSeatHoldRepository seatHolds,
@@ -72,6 +77,8 @@ public class DefaultBookingService implements BookingService {
                                  ObjectMapper json, Environment environment) {
         this.users = users;
         this.movies = movies;
+        this.movieCasts = movieCasts;
+        this.movieDirectors = movieDirectors;
         this.showtimes = showtimes;
         this.rooms = rooms;
         this.seats = seats;
@@ -185,9 +192,12 @@ public class DefaultBookingService implements BookingService {
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public ShowtimeSelectionResult selectShowtime(int userId, UUID currentHoldId,
                                                   SelectShowtimeRequest request, boolean requireFutureShowtime) {
+        if (request.getShowtimeId() <= 0) {
+            return selection(Status.INVALID, currentHoldId, request, null, "Vui lòng chọn một suất chiếu trước khi chọn ghế.");
+        }
         Showtime showtime = showtimes.findDetailsById(request.getShowtimeId()).orElse(null);
         if (showtime == null || showtime.getMovie().getMovieId() != request.getMovieId()
-                || (requireFutureShowtime && !showtime.getStartTime().isAfter(LocalDateTime.now()))) {
+                || !showtime.getStartTime().isAfter(LocalDateTime.now())) {
             return selection(Status.INVALID, currentHoldId, request, null, "Suất chiếu không tồn tại hoặc đã bắt đầu.");
         }
         BookingHold hold = currentHoldId == null ? null : holds.findByIdForUpdate(currentHoldId).orElse(null);
@@ -355,17 +365,36 @@ public class DefaultBookingService implements BookingService {
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public PaymentIntentResult startPayment(int userId, UUID holdId) {
-        BookingHold hold = mutableHoldForUpdate(holdId);
-        if (hold == null || hold.getShowtime() == null || hold.getSeatHolds().isEmpty()
-                || hold.getSeatHolds().size() > MAXIMUM_SEATS) {
+        // Lock the hold before checking an existing payment, including PaymentPending.
+        BookingHold hold = holdId == null ? null : holds.findByIdForUpdate(holdId).orElse(null);
+        if (hold == null) {
             return new PaymentIntentResult(Status.EXPIRED, null, null, "Phiên giữ chỗ không hợp lệ hoặc đã hết hạn.");
         }
         if (hold.getUser() != null && hold.getUser().getUserId() != userId) {
             return new PaymentIntentResult(Status.UNAUTHORIZED, null, null, "Phiên giữ chỗ không thuộc người dùng hiện tại.");
         }
+        if (!isActive(hold)) {
+            if (Set.of("Pending", "PaymentPending").contains(hold.getStatus())) releaseHold(hold, "Expired");
+            return new PaymentIntentResult(Status.EXPIRED, null, null, "Phiên giữ chỗ đã hết hạn.");
+        }
+        if ((!isMutable(hold) && !"PaymentPending".equals(hold.getStatus()))
+                || hold.getShowtime() == null || hold.getSeatHolds().isEmpty()
+                || hold.getSeatHolds().size() > MAXIMUM_SEATS) {
+            return new PaymentIntentResult(Status.INVALID, null, null, "Phiên giữ chỗ không hợp lệ.");
+        }
         PaymentIntent existing = paymentIntents.findByBookingHoldBookingHoldIdAndStatus(holdId, "Pending").orElse(null);
         if (existing != null) {
+            if (!existing.getUser().getUserId().equals(userId)) {
+                return new PaymentIntentResult(Status.UNAUTHORIZED, null, null, "Phiên thanh toán không thuộc người dùng hiện tại.");
+            }
+            if (!existing.getExpiresAtUtc().isAfter(Instant.now())) {
+                expireIntent(existing);
+                return new PaymentIntentResult(Status.EXPIRED, null, null, "Phiên thanh toán đã hết hạn.");
+            }
             return new PaymentIntentResult(Status.SUCCESS, existing.getPaymentReference(), existing.getExpiresAtUtc(), null);
+        }
+        if ("PaymentPending".equals(hold.getStatus())) {
+            return new PaymentIntentResult(Status.INVALID, null, null, "Không tìm thấy phiên thanh toán đang chờ.");
         }
         BigDecimal amount = normalizeVnd(hold.getSeatHolds().stream().map(BookingSeatHold::getUnitPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add).add(hold.getComboHolds().stream()
@@ -753,8 +782,8 @@ public class DefaultBookingService implements BookingService {
                 .reduce((a,b) -> a + ", " + b).orElse(""));
         model.setLanguage(movie.getLanguage() == null ? "" : movie.getLanguage().getLanguageName());
         model.setCountry(movie.getCountry() == null ? "" : movie.getCountry().getCountryName());
-        model.setDirector(movie.getMovieDirectors().stream().map(value -> value.getPerson().getFullName()).reduce((a,b)->a+", "+b).orElse(""));
-        model.setCast(movie.getMovieCasts().stream().map(value -> value.getPerson().getFullName()).reduce((a,b)->a+", "+b).orElse(""));
+        model.setDirector(String.join(", ", movieDirectors.findPersonNamesByMovieId(movie.getMovieId())));
+        model.setCast(String.join(", ", movieCasts.findPersonNamesByMovieId(movie.getMovieId())));
         return model;
     }
 

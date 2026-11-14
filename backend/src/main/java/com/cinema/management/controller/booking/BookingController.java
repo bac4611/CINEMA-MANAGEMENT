@@ -79,6 +79,11 @@ public class BookingController {
             return "redirect:/Booking/Index";
         }
         model.addAttribute("booking", booking);
+        var seatRows = new TreeMap<String, List<com.cinema.management.model.viewmodel.booking.SeatChoiceViewModel>>();
+        booking.getSeatChoices().stream()
+                .sorted(Comparator.comparing(com.cinema.management.model.viewmodel.booking.SeatChoiceViewModel::getSeatCode))
+                .forEach(seat -> seatRows.computeIfAbsent(seat.getSeatCode().substring(0, 1), key -> new ArrayList<>()).add(seat));
+        model.addAttribute("seatRows", seatRows);
         return "booking/select-seats";
     }
 
