@@ -3,7 +3,6 @@ package com.cinema.management.model.viewmodel.booking;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -38,8 +37,6 @@ public class BookingViewModel {
     private BigDecimal standardTicketPrice = new BigDecimal("18.50");
     private BigDecimal vipTicketPrice = BigDecimal.ZERO;
     private BigDecimal sweetboxTicketPrice = new BigDecimal("30.00");
-    private BigDecimal convenienceFeePerTicket = new BigDecimal("1.50");
-    private BigDecimal taxRate = new BigDecimal("0.08");
     private List<SeatChoiceViewModel> seatChoices = new ArrayList<>();
     private List<ConcessionItemViewModel> concessions = new ArrayList<>();
     private boolean paid;
@@ -56,26 +53,14 @@ public class BookingViewModel {
         return selectedSeats.stream().map(this::seatPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public BigDecimal getConvenienceFee() {
-        return convenienceFeePerTicket.multiply(BigDecimal.valueOf(selectedSeats.size()));
-    }
-
     public BigDecimal getConcessionSubtotal() {
         return concessions.stream()
                 .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getSelectedQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public BigDecimal getPreTaxTotal() {
-        return getTicketSubtotal().add(getConvenienceFee()).add(getConcessionSubtotal());
-    }
-
-    public BigDecimal getTax() {
-        return getPreTaxTotal().multiply(taxRate).setScale(2, RoundingMode.HALF_UP);
-    }
-
     public BigDecimal getGrandTotal() {
-        return getPreTaxTotal().add(getTax());
+        return getTicketSubtotal().add(getConcessionSubtotal());
     }
 }
 

@@ -120,7 +120,14 @@
     <build>
         <resources>
             <resource>
-                <directory>${maven.multiModuleProjectDirectory}/frontend/src/main/resources</directory>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${maven.multiModuleProjectDirectory}/frontend</directory>
+                <includes>
+                    <include>templates/**</include>
+                    <include>static/**</include>
+                </includes>
             </resource>
         </resources>
         <plugins>

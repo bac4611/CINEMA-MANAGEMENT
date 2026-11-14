@@ -1,0 +1,51 @@
+.concessions-page { background:radial-gradient(ellipse at 5% 25%,#35261d66,transparent 45%),#121212; }
+.concessions-page .brand {text-decoration:none;font-size:22px;}
+.concessions-page main {padding:0 0 70px;}
+.concessions-page .site-header {margin:0;}
+.addons-progress {display:flex;align-items:center;gap:28px;padding:24px 0;border-bottom:1px solid #51443c66;color:#71665e;font-size:13px;font-weight:700;}
+.addons-progress span {display:flex;gap:10px;align-items:center;}
+.addons-progress small {font-size:12px;}
+.addons-progress .done {color:#b6a396;}
+.addons-progress .active {color:#f4bb92;}
+.addons-content {padding-top:38px;}
+.concessions-page .step-heading {margin-bottom:30px;}
+.concessions-page h1 {font-size:clamp(30px,3.7vw,48px);line-height:1.18;max-width:720px;margin-bottom:12px;}
+.concessions-page .subtitle {margin-bottom:0;font-size:14px;}
+.concessions-page .content-summary-grid {grid-template-columns:minmax(0,1fr) 340px;gap:28px;}
+.concessions-page .concession-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;}
+.concessions-page .concession-item {overflow:hidden;display:flex;flex-direction:column;min-width:0;border:1px solid #51443c88;border-radius:16px;box-shadow:none;transition:border-color .2s,transform .2s,box-shadow .2s;}
+.concessions-page .concession-item:hover {border-color:#d4a37388;transform:translateY(-3px);box-shadow:0 12px 30px #0003;}
+.concessions-page .concession-item.is-selected {border-color:#d4a373;}
+.concessions-page .concession-art {height:102px;display:flex;align-items:center;justify-content:space-between;padding:20px 24px;background:radial-gradient(ellipse at 10% 80%,#aa764735,transparent 80%),#29231e;border-bottom:1px solid #51443c66;}
+.concession-art > span:first-child {font-size:44px;filter:drop-shadow(0 8px 10px #0005);}
+.addons-card-label {font-size:9px;letter-spacing:.15em;color:#c69c7e;}
+.addons-card-body {padding:22px;display:flex;flex-direction:column;flex:1;}
+.concessions-page .concession-item h2 {font-size:19px;line-height:1.45;letter-spacing:0;margin:0 0 10px;min-height:55px;overflow-wrap:anywhere;}
+.concessions-page .addons-price {font-size:20px;font-weight:700;color:#f4bb92;margin:0 0 12px;}
+.concessions-page .stock-label {font-size:12px;color:#a99b91;margin:0 0 18px;}
+.concessions-page .stock-label.is-empty {color:#d38c7a;}
+.concessions-page .quantity-control {display:flex;align-items:center;justify-content:space-between;gap:14px;width:144px;padding:5px;border:1px solid #51443c;border-radius:10px;background:#151311;margin-top:auto;}
+.quantity-control button {display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:7px;background:#332920;color:#f4bb92;font-size:21px;cursor:pointer;transition:background .2s;}
+.quantity-control button:hover:not(:disabled) {background:#8b5e3c;color:white;}
+.quantity-control button:disabled {opacity:.3;cursor:not-allowed;}
+.quantity-control strong {font-size:15px;font-variant-numeric:tabular-nums;}
+.concessions-page .booking-order-summary {padding:26px;position:sticky;top:94px;border-radius:16px;min-width:0;box-shadow:0 14px 40px #0002;}
+.concessions-page .booking-order-summary h2 {font-size:27px;line-height:1.3;margin:10px 0 20px;}
+.concessions-page .booking-order-summary > p:not(.eyebrow):not(.addons-note) {font-size:16px;line-height:1.5;color:#f4bb92;}
+.concessions-page .total-line {font-size:13px;margin:14px 0;gap:12px;}
+.addons-selected {border-bottom:1px solid #51443c88;padding:0 0 20px;margin:20px 0;}
+.addons-selected p {font-size:12px;color:#a99b91;margin:0;}
+.addons-selected-line {display:flex;justify-content:space-between;gap:12px;font-size:12px;line-height:1.6;margin-top:10px;}
+.addons-selected-line span {min-width:0;overflow-wrap:anywhere;color:#bcaea5;}
+.addons-selected-line strong {white-space:nowrap;font-weight:600;}
+.addons-grand {display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #51443c88;padding-top:22px;margin-top:22px;font-size:13px;}
+.addons-grand strong {font-size:21px;color:#f4bb92;white-space:nowrap;}
+.addons-note {font-size:11px;color:#93857b;margin:10px 0 22px;line-height:1.6;}
+.concessions-page .primary-button {min-height:50px;height:auto;font-size:14px;padding:15px 12px;}
+.concessions-page .secondary-button {margin-top:12px;min-height:46px;font-size:12px;}
+.addons-error {border:1px solid #d87a7366;background:#d87a7315;color:#ffc1ae;border-radius:10px;padding:14px;}
+.addons-error[hidden] {display:none;}
+@media(max-width:1000px){.concessions-page .content-summary-grid{grid-template-columns:minmax(0,1fr) 300px;gap:18px;}.concessions-page .concession-grid{grid-template-columns:1fr;}}
+@media(max-width:720px){.concessions-page .content-summary-grid{grid-template-columns:1fr;}.concessions-page .booking-order-summary{position:static;}.concessions-page .concession-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.addons-progress{gap:14px;justify-content:space-between;}.addons-progress span{flex-direction:column;gap:6px;}.addons-card-body{padding:16px;}.concessions-page .concession-art{padding:16px;}.addons-card-label{display:none;}.concessions-page .brand{font-size:18px;}.concessions-page .booking-header-actions{gap:10px;}}
+@media(max-width:430px){.concessions-page .concession-grid{grid-template-columns:1fr;}.addons-content{padding-top:26px;}}
+@media(prefers-reduced-motion:reduce){.concessions-page .concession-item{transition:none;}.concessions-page .concession-item:hover{transform:none;}}

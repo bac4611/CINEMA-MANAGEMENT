@@ -17,9 +17,8 @@
             list.append(empty);
         }
         selected.forEach(seat => {
-            const line = document.createElement('div');
+            const line = document.createElement('div'), label = document.createElement('span'), price = document.createElement('span');
             line.className = 'selected-line';
-            const label = document.createElement('span'), price = document.createElement('span');
             label.textContent = (seat.dataset.seatType === 'Regular' ? 'Standard' : seat.dataset.seatType) + ' ' + seat.dataset.seatCode;
             price.textContent = money(Number(seat.dataset.price));
             line.append(label, price);
@@ -40,9 +39,9 @@
         const csrf = form.querySelector('input[name="_csrf"]');
         if (csrf) body.append(csrf.name, csrf.value);
         try {
-            const response = await fetch(form.dataset.holdUrl, {method:'POST', body});
+            const response = await fetch(form.dataset.holdUrl, {method:'POST', body, headers:{Accept:'application/json'}});
             const result = await response.json().catch(() => ({}));
-            if (response.status === 409) {
+            if (response.status === 409 && /ghế/i.test(result.message || '')) {
                 seat.classList.remove('selected');
                 seat.classList.add('occupied');
             }
@@ -59,8 +58,6 @@
             render();
         }
     }));
-    form.addEventListener('submit', event => {
-        if (pending || confirm.disabled) event.preventDefault();
-    });
+    form.addEventListener('submit', event => { if (pending || confirm.disabled) event.preventDefault(); });
     render();
 })();

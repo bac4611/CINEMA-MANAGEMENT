@@ -65,8 +65,7 @@ public class DefaultBookingService implements BookingService {
     private final Environment environment;
 
     public DefaultBookingService(UserRepository users, MovieRepository movies,
-                                 MovieCastRepository movieCasts,
-                                 MovieDirectorRepository movieDirectors,
+                                 MovieCastRepository movieCasts, MovieDirectorRepository movieDirectors,
                                  ShowtimeRepository showtimes, RoomRepository rooms,
                                  SeatRepository seats, SeatTypePricingRepository pricing,
                                  BookingHoldRepository holds, BookingSeatHoldRepository seatHolds,
@@ -366,17 +365,36 @@ public class DefaultBookingService implements BookingService {
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public PaymentIntentResult startPayment(int userId, UUID holdId) {
-        BookingHold hold = mutableHoldForUpdate(holdId);
-        if (hold == null || hold.getShowtime() == null || hold.getSeatHolds().isEmpty()
-                || hold.getSeatHolds().size() > MAXIMUM_SEATS) {
+        // Lock the hold before checking an existing payment, including PaymentPending.
+        BookingHold hold = holdId == null ? null : holds.findByIdForUpdate(holdId).orElse(null);
+        if (hold == null) {
             return new PaymentIntentResult(Status.EXPIRED, null, null, "Phiên giữ chỗ không hợp lệ hoặc đã hết hạn.");
         }
         if (hold.getUser() != null && hold.getUser().getUserId() != userId) {
             return new PaymentIntentResult(Status.UNAUTHORIZED, null, null, "Phiên giữ chỗ không thuộc người dùng hiện tại.");
         }
+        if (!isActive(hold)) {
+            if (Set.of("Pending", "PaymentPending").contains(hold.getStatus())) releaseHold(hold, "Expired");
+            return new PaymentIntentResult(Status.EXPIRED, null, null, "Phiên giữ chỗ đã hết hạn.");
+        }
+        if ((!isMutable(hold) && !"PaymentPending".equals(hold.getStatus()))
+                || hold.getShowtime() == null || hold.getSeatHolds().isEmpty()
+                || hold.getSeatHolds().size() > MAXIMUM_SEATS) {
+            return new PaymentIntentResult(Status.INVALID, null, null, "Phiên giữ chỗ không hợp lệ.");
+        }
         PaymentIntent existing = paymentIntents.findByBookingHoldBookingHoldIdAndStatus(holdId, "Pending").orElse(null);
         if (existing != null) {
+            if (!existing.getUser().getUserId().equals(userId)) {
+                return new PaymentIntentResult(Status.UNAUTHORIZED, null, null, "Phiên thanh toán không thuộc người dùng hiện tại.");
+            }
+            if (!existing.getExpiresAtUtc().isAfter(Instant.now())) {
+                expireIntent(existing);
+                return new PaymentIntentResult(Status.EXPIRED, null, null, "Phiên thanh toán đã hết hạn.");
+            }
             return new PaymentIntentResult(Status.SUCCESS, existing.getPaymentReference(), existing.getExpiresAtUtc(), null);
+        }
+        if ("PaymentPending".equals(hold.getStatus())) {
+            return new PaymentIntentResult(Status.INVALID, null, null, "Không tìm thấy phiên thanh toán đang chờ.");
         }
         BigDecimal amount = normalizeVnd(hold.getSeatHolds().stream().map(BookingSeatHold::getUnitPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add).add(hold.getComboHolds().stream()

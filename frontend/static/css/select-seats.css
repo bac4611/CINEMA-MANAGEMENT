@@ -2224,14 +2224,14 @@ h3 {
 .booking-timer.is-urgent strong {
     color: #f87171;
 }
-/* Keep the supplied two-column composition responsive. */
+/* Seat layout: keep the supplied design within the viewport. */
+#seatForm {display:grid;grid-template-columns:minmax(0,1.8fr) minmax(280px,.8fr);width:100%;gap:22px;align-items:start;}
+.seat-card {min-width:0;}
+.summary-card {padding:30px 26px;min-width:0;top:90px;}
 .brand {text-decoration:none;}
 .step-label {transform:none !important;}
-.summary-card {padding:30px 26px; top:90px; min-width:0;}
-.product-card {min-width:0;}
-.product-body h3 {overflow-wrap:anywhere;}
-.product-footer {flex-wrap:wrap;}
-.booking-alert {padding:16px; margin-bottom:20px; color:var(--peach);}
-.product-card[aria-busy="true"] {opacity:.65;}
-@media(max-width:650px) {.concession-grid {grid-template-columns:1fr;} .brand {font-size:16px;} .header-row {gap:8px;} .booking-timer {min-width:0;} }
+.booking-alert {padding:16px;margin-bottom:20px;color:var(--peach);}
+.seat[aria-busy="true"] {opacity:.6;}
+@media(max-width:1000px){#seatForm{grid-template-columns:1fr;}#seatForm .summary-card{order:0;position:static;}}
+@media(max-width:650px){.brand{font-size:16px;}.header-row{gap:8px;}.booking-timer{min-width:0;}.summary-card{padding:24px;}}
 

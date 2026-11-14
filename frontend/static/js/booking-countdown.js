@@ -14,10 +14,10 @@
         }
 
         // HOLD CHANGE: bù sai lệch đồng hồ máy khách để thời gian hiển thị bám theo UTC của server.
-        const serverClockOffset = serverNow - Date.now();
+        const startedAt = performance.now();
 
         const render = () => {
-            const estimatedServerNow = Date.now() + serverClockOffset;
+            const estimatedServerNow = serverNow + (performance.now() - startedAt);
             const remainingMilliseconds = Math.max(0, expiresAt - estimatedServerNow);
             const remainingSeconds = Math.ceil(remainingMilliseconds / 1000);
             const minutes = Math.floor(remainingSeconds / 60);
