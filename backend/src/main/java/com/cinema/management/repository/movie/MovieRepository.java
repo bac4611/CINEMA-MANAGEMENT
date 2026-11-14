@@ -12,9 +12,14 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
     List<Movie> findByTitleContainingIgnoreCaseOrderByReleaseDateDesc(String title);
     List<Movie> findByReleaseDateGreaterThanEqualOrderByReleaseDate(LocalDate releaseDate);
 
-    @EntityGraph(attributePaths = {
-            "country", "language", "movieGenres.genre", "movieCasts.person", "movieDirectors.person"
-    })
+    /*
+     * Do not join-fetch casts and directors together here. Both associations
+     * are List-valued bags, and Hibernate rejects fetching multiple bags in a
+     * single query with MultipleBagFetchException. The booking service is
+     * transactional, so those two collections can be initialized separately
+     * when the view model is assembled.
+     */
+    @EntityGraph(attributePaths = {"country", "language", "movieGenres.genre"})
     @Query("select m from Movie m where m.movieId = :movieId")
     Optional<Movie> findDetailsById(@Param("movieId") Integer movieId);
 

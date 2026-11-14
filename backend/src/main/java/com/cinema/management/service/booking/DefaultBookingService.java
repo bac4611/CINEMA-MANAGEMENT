@@ -11,6 +11,8 @@ import com.cinema.management.model.entity.theater.*;
 import com.cinema.management.model.viewmodel.booking.*;
 import com.cinema.management.repository.account.UserRepository;
 import com.cinema.management.repository.booking.*;
+import com.cinema.management.repository.movie.MovieCastRepository;
+import com.cinema.management.repository.movie.MovieDirectorRepository;
 import com.cinema.management.repository.movie.MovieRepository;
 import com.cinema.management.repository.payment.*;
 import com.cinema.management.repository.theater.*;
@@ -43,6 +45,8 @@ public class DefaultBookingService implements BookingService {
 
     private final UserRepository users;
     private final MovieRepository movies;
+    private final MovieCastRepository movieCasts;
+    private final MovieDirectorRepository movieDirectors;
     private final ShowtimeRepository showtimes;
     private final RoomRepository rooms;
     private final SeatRepository seats;
@@ -61,6 +65,8 @@ public class DefaultBookingService implements BookingService {
     private final Environment environment;
 
     public DefaultBookingService(UserRepository users, MovieRepository movies,
+                                 MovieCastRepository movieCasts,
+                                 MovieDirectorRepository movieDirectors,
                                  ShowtimeRepository showtimes, RoomRepository rooms,
                                  SeatRepository seats, SeatTypePricingRepository pricing,
                                  BookingHoldRepository holds, BookingSeatHoldRepository seatHolds,
@@ -72,6 +78,8 @@ public class DefaultBookingService implements BookingService {
                                  ObjectMapper json, Environment environment) {
         this.users = users;
         this.movies = movies;
+        this.movieCasts = movieCasts;
+        this.movieDirectors = movieDirectors;
         this.showtimes = showtimes;
         this.rooms = rooms;
         this.seats = seats;
@@ -185,9 +193,12 @@ public class DefaultBookingService implements BookingService {
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public ShowtimeSelectionResult selectShowtime(int userId, UUID currentHoldId,
                                                   SelectShowtimeRequest request, boolean requireFutureShowtime) {
+        if (request.getShowtimeId() <= 0) {
+            return selection(Status.INVALID, currentHoldId, request, null, "Vui lòng chọn một suất chiếu trước khi chọn ghế.");
+        }
         Showtime showtime = showtimes.findDetailsById(request.getShowtimeId()).orElse(null);
         if (showtime == null || showtime.getMovie().getMovieId() != request.getMovieId()
-                || (requireFutureShowtime && !showtime.getStartTime().isAfter(LocalDateTime.now()))) {
+                || !showtime.getStartTime().isAfter(LocalDateTime.now())) {
             return selection(Status.INVALID, currentHoldId, request, null, "Suất chiếu không tồn tại hoặc đã bắt đầu.");
         }
         BookingHold hold = currentHoldId == null ? null : holds.findByIdForUpdate(currentHoldId).orElse(null);
@@ -753,8 +764,8 @@ public class DefaultBookingService implements BookingService {
                 .reduce((a,b) -> a + ", " + b).orElse(""));
         model.setLanguage(movie.getLanguage() == null ? "" : movie.getLanguage().getLanguageName());
         model.setCountry(movie.getCountry() == null ? "" : movie.getCountry().getCountryName());
-        model.setDirector(movie.getMovieDirectors().stream().map(value -> value.getPerson().getFullName()).reduce((a,b)->a+", "+b).orElse(""));
-        model.setCast(movie.getMovieCasts().stream().map(value -> value.getPerson().getFullName()).reduce((a,b)->a+", "+b).orElse(""));
+        model.setDirector(String.join(", ", movieDirectors.findPersonNamesByMovieId(movie.getMovieId())));
+        model.setCast(String.join(", ", movieCasts.findPersonNamesByMovieId(movie.getMovieId())));
         return model;
     }
 
