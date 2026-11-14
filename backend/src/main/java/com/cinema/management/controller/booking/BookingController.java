@@ -70,6 +70,11 @@ public class BookingController {
         return selectShowtimeInternal(form, request, flash, true);
     }
 
+    @GetMapping({"/SelectShowtimeFromSchedule", "/select-showtime-from-schedule"})
+    public String selectShowtimeFromScheduleGet() {
+        return "redirect:/Booking/Index";
+    }
+
     @GetMapping({"/SelectSeats", "/select-seats"})
     public String selectSeats(HttpServletRequest request, Model model, RedirectAttributes flash) {
         UUID holdId = currentHoldId(request);
