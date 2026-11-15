@@ -50,14 +50,16 @@
 
 <main th:replace="${content}"></main>
 
-<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index:9999">
-    <div class="toast text-bg-success show" th:if="${alertSuccess != null or successMessage != null}">
-        <div class="d-flex"><div class="toast-body" th:text="${alertSuccess != null ? alertSuccess : successMessage}">Thành công</div>
-            <button type="button" class="btn-close btn-close-white m-auto me-2" data-bs-dismiss="toast"></button></div>
+<div class="cosmos-notices" aria-label="Thông báo">
+    <div class="cosmos-notice cosmos-notice--success" data-flash-notice role="status" aria-live="polite" th:if="${alertSuccess != null or successMessage != null}">
+        <span class="cosmos-notice__icon" aria-hidden="true">✓</span>
+        <p class="cosmos-notice__message" th:text="${alertSuccess != null ? alertSuccess : successMessage}">Thành công</p>
+        <button type="button" class="cosmos-notice__close" data-notice-close aria-label="Đóng thông báo">×</button>
     </div>
-    <div class="toast text-bg-danger show" th:if="${alertError != null}">
-        <div class="d-flex"><div class="toast-body" th:text="${alertError}">Có lỗi xảy ra</div>
-            <button type="button" class="btn-close btn-close-white m-auto me-2" data-bs-dismiss="toast"></button></div>
+    <div class="cosmos-notice cosmos-notice--error" data-flash-notice role="alert" th:if="${alertError != null}">
+        <span class="cosmos-notice__icon" aria-hidden="true">!</span>
+        <p class="cosmos-notice__message" th:text="${alertError}">Có lỗi xảy ra</p>
+        <button type="button" class="cosmos-notice__close" data-notice-close aria-label="Đóng thông báo">×</button>
     </div>
 </div>
 

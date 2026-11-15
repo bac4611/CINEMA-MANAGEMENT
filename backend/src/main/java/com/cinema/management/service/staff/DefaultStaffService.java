@@ -19,6 +19,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -31,8 +32,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class DefaultStaffService implements StaffService {
-    private static final LocalTime OPENING = LocalTime.of(8, 0);
-    private static final LocalTime CLOSING = LocalTime.of(23, 0);
     private static final String DEFAULT_POSTER = "/img/poster/yourname400x600.png";
     private static final String DEFAULT_TRAILER = "#";
     private static final String FORMAT_MARKER = "\n[COSMOS_FORMATS:";
@@ -130,10 +129,11 @@ public class DefaultStaffService implements StaffService {
             LocalDateTime start;
             try { start = parseStart(date, item.getStartTime()); }
             catch (DateTimeParseException exception) { return OperationResult.failure(Status.INVALID, "Giờ bắt đầu không hợp lệ."); }
+            if (!start.toLocalDate().equals(date))
+                return OperationResult.failure(Status.INVALID, "Ngày bắt đầu không khớp ngày lịch chiếu.");
             LocalDateTime end = start.plusMinutes(movie.getDuration());
-            if (movie.getDuration() <= 0 || start.toLocalTime().isBefore(OPENING) || end.toLocalTime().isAfter(CLOSING)
-                    || !end.toLocalDate().equals(date))
-                return OperationResult.failure(Status.INVALID, "Suất chiếu phải nằm trong khung giờ từ 08:00 đến 23:00.");
+            if (movie.getDuration() <= 0)
+                return OperationResult.failure(Status.INVALID, "Thời lượng phim phải lớn hơn 0.");
             incoming.add(new Entry(item.getShowtimeId(), movie, room, start, end, basePrice(room.getRoomName(), date)));
         }
         List<Showtime> old = showtimes.findByDateOrderByRoomRoomIdAscStartTimeAsc(date);
@@ -144,7 +144,7 @@ public class DefaultStaffService implements StaffService {
         for (Entry entry : incoming) {
             if (entry.id() <= 0) continue;
             Showtime current = oldById.get(entry.id());
-            if (tickets.countByShowtimeShowtimeId(entry.id()) > 0 &&
+            if ((tickets.countByShowtimeShowtimeId(entry.id()) > 0 || showtimes.countBookingReferences(entry.id()) > 0) &&
                     (!current.getMovie().getMovieId().equals(entry.movie().getMovieId())
                             || !current.getRoom().getRoomId().equals(entry.room().getRoomId())
                             || !current.getStartTime().equals(entry.start()) || !current.getEndTime().equals(entry.end())))
@@ -155,13 +155,22 @@ public class DefaultStaffService implements StaffService {
                 .map(item -> new Entry(item.getShowtimeId(), item.getMovie(), item.getRoom(), item.getStartTime(),
                         item.getEndTime(), item.getBasePrice())).toList();
         List<Entry> finalEntries = new ArrayList<>(retainedTicketed); finalEntries.addAll(incoming);
-        for (var group : finalEntries.stream().collect(Collectors.groupingBy(item -> item.room().getRoomId())).values()) {
+        // Include earlier/later dates so a screening crossing midnight cannot overlap another day.
+        LocalDateTime windowEnd = incoming.stream().map(Entry::end).max(LocalDateTime::compareTo).orElse(date.plusDays(1).atStartOfDay());
+        List<Entry> overlapEntries = new ArrayList<>(finalEntries);
+        showtimes.findOverlappingWindow(date.atStartOfDay(), windowEnd).stream()
+                .filter(item -> !oldById.containsKey(item.getShowtimeId()))
+                .map(item -> new Entry(item.getShowtimeId(), item.getMovie(), item.getRoom(), item.getStartTime(), item.getEndTime(), item.getBasePrice()))
+                .forEach(overlapEntries::add);
+        for (var group : overlapEntries.stream().collect(Collectors.groupingBy(item -> item.room().getRoomId())).values()) {
             List<Entry> ordered = group.stream().sorted(Comparator.comparing(Entry::start)).toList();
             for (int i = 1; i < ordered.size(); i++) if (ordered.get(i).start().isBefore(ordered.get(i - 1).end()))
                 return OperationResult.failure(Status.CONFLICT, "Phòng chiếu đã có lịch bị trùng giờ.");
         }
         List<Showtime> removable = old.stream().filter(item -> !ids.contains(item.getShowtimeId())
                 && tickets.countByShowtimeShowtimeId(item.getShowtimeId()) == 0).toList();
+        if (!retainedTicketed.isEmpty() || removable.stream().anyMatch(item -> showtimes.countBookingReferences(item.getShowtimeId()) > 0))
+            return OperationResult.failure(Status.CONFLICT, "Không thể xóa suất chiếu đã có vé hoặc phiên đặt chỗ/thanh toán.");
         int created = 0;
         try {
             showtimes.deleteAll(removable);
@@ -173,6 +182,7 @@ public class DefaultStaffService implements StaffService {
             }
             showtimes.flush();
         } catch (DataAccessException exception) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return OperationResult.failure(Status.FAILURE, "Không lưu được lịch chiếu vào database.");
         }
         return new OperationResult(Status.SUCCESS, "Lưu lịch chiếu thành công.", finalEntries.size(), created,
@@ -234,30 +244,36 @@ public class DefaultStaffService implements StaffService {
         combo.setQuantity(form.getQuantity()); combos.save(combo); return OperationResult.success("Đã cập nhật món thành công.");
     }
 
-    @Override @Transactional
+    @Override @Transactional(isolation = Isolation.SERIALIZABLE)
     public OperationResult createMovie(StaffMovieRequest request) {
         if (!validMovie(request)) return OperationResult.failure(Status.INVALID, "Dữ liệu phim không hợp lệ.");
+        if (duplicateTitle(request, 0)) return OperationResult.failure(Status.CONFLICT, "Tên phim đã tồn tại. Vui lòng sửa phim hiện có thay vì thêm lại.");
         Movie movie = new Movie(); applyMovie(movie, request); movies.saveAndFlush(movie); saveMovieLinks(movie.getMovieId(), request);
         return OperationResult.success("Đã thêm phim vào database.");
     }
 
-    @Override @Transactional
+    @Override @Transactional(isolation = Isolation.SERIALIZABLE)
     public OperationResult updateMovie(StaffMovieRequest request) {
         if (!validMovie(request) || request.getMovieId() <= 0)
             return OperationResult.failure(Status.INVALID, "Dữ liệu phim không hợp lệ.");
         Movie movie = movies.findById(request.getMovieId()).orElse(null);
         if (movie == null) return OperationResult.failure(Status.NOT_FOUND, "Không tìm thấy phim.");
+        if (duplicateTitle(request, request.getMovieId())) return OperationResult.failure(Status.CONFLICT, "Tên phim đã tồn tại ở phim khác.");
+        if (movie.getDuration() != request.getDuration() && !showtimes.findByMovieMovieId(request.getMovieId()).isEmpty())
+            return OperationResult.failure(Status.CONFLICT, "Phim đã có lịch chiếu. Cần xử lý lịch chiếu trước khi đổi thời lượng.");
         applyMovie(movie, request); movies.save(movie); saveMovieLinks(movie.getMovieId(), request);
         return OperationResult.success("Đã cập nhật phim.");
     }
 
-    @Override @Transactional
+    @Override @Transactional(isolation = Isolation.SERIALIZABLE)
     public OperationResult deleteMovie(int movieId) {
         Movie movie = movies.findById(movieId).orElse(null);
         if (movie == null) return OperationResult.failure(Status.NOT_FOUND, "Không tìm thấy phim.");
         List<Showtime> movieShowtimes = showtimes.findByMovieMovieId(movieId);
         if (movieShowtimes.stream().anyMatch(item -> tickets.countByShowtimeShowtimeId(item.getShowtimeId()) > 0))
             return OperationResult.failure(Status.CONFLICT, "Không thể xóa phim đã có vé đặt.");
+        if (movies.countBookingReferences(movieId) > 0 || movieShowtimes.stream().anyMatch(item -> showtimes.countBookingReferences(item.getShowtimeId()) > 0))
+            return OperationResult.failure(Status.CONFLICT, "Không thể xóa phim còn phiên đặt chỗ, thanh toán hoặc đánh giá liên quan.");
         showtimes.deleteAll(movieShowtimes); movieGenres.deleteByMovieId(movieId); movieCasts.deleteByMovieId(movieId);
         movieDirectors.deleteByMovieId(movieId); movies.delete(movie);
         return OperationResult.success("Đã xóa phim khỏi database.");
@@ -292,13 +308,15 @@ public class DefaultStaffService implements StaffService {
         String trailer = text(form.getTrailer()) ? cleanTrailer(form.getTrailer())
                 : text(form.getTrailerUrl()) ? cleanTrailer(form.getTrailerUrl()) : DEFAULT_TRAILER;
         movie.setTrailer(storedTrailer(trailer, form.getAvailableFormats()));
-        movie.setReleaseDate(form.getReleaseDate() == null ? LocalDate.now() : form.getReleaseDate());
+        movie.setReleaseDate(form.getReleaseDate() == null
+                ? (movie.getReleaseDate() == null ? LocalDate.now() : movie.getReleaseDate()) : form.getReleaseDate());
         movie.setAgeRating(text(form.getAgeRating()) ? form.getAgeRating().trim() : "T13");
         movie.setLanguage(resolveLanguage(form.getLanguage())); movie.setCountry(resolveCountry(form.getCountry()));
     }
 
     private void saveMovieLinks(int movieId, StaffMovieRequest form) {
         movieGenres.deleteByMovieId(movieId); movieDirectors.deleteByMovieId(movieId); movieCasts.deleteByMovieId(movieId);
+        movieGenres.flush(); movieDirectors.flush(); movieCasts.flush();
         for (String name : names(form.getGenre())) {
             Genre genre = genres.findByNameIgnoreCase(name).orElseGet(() -> genres.saveAndFlush(newGenre(name)));
             MovieGenre link = new MovieGenre(); link.setMovieId(movieId); link.setGenreId(genre.getGenreId()); movieGenres.save(link);
@@ -360,6 +378,12 @@ public class DefaultStaffService implements StaffService {
     private boolean validCombo(Combo combo) { return combo != null && text(combo.getComboName()) && combo.getComboPrice() != null
             && combo.getComboPrice().compareTo(BigDecimal.ZERO) > 0 && combo.getQuantity() >= 0; }
     private boolean validMovie(StaffMovieRequest form) { return form != null && text(form.getTitle()) && form.getDuration() > 0; }
+    private String normalizedTitle(String title) { return title.strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT); }
+    private boolean duplicateTitle(StaffMovieRequest form, int excludedId) {
+        String title = normalizedTitle(form.getTitle());
+        return movies.findAll().stream().anyMatch(movie -> movie.getMovieId() != excludedId
+                && normalizedTitle(movie.getTitle()).equals(title));
+    }
     private Language resolveLanguage(String name) { if (!text(name)) return null; String normalized = limit(name.trim(), 100);
         return languages.findByLanguageNameIgnoreCase(normalized).orElseGet(() -> { Language value = new Language(); value.setLanguageName(normalized); return languages.save(value); }); }
     private Country resolveCountry(String name) { if (!text(name)) return null; String normalized = limit(name.trim(), 100);

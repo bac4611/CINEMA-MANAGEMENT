@@ -2246,3 +2246,38 @@ h3 {
 .booking-timer.is-urgent strong {
     color: #f87171;
 }
+
+/* Payment receipt: long ticket codes must never squeeze the labels or total. */
+.payment-success-page {padding:40px 0 64px;}
+.success-receipt {max-width:1050px;margin:0 auto;padding:clamp(22px,4vw,42px);}
+.success-receipt__header {text-align:center;padding-bottom:32px;border-bottom:1px solid var(--line);}
+.success-receipt__check {color:var(--peach);font-size:64px;line-height:1;margin-bottom:20px;}
+.success-receipt__header .eyebrow {line-height:1.6;margin-bottom:12px;}
+.success-receipt__header h1 {font-size:clamp(28px,4vw,48px);line-height:1.25;letter-spacing:-.02em;margin:0 0 16px;overflow-wrap:anywhere;}
+.success-order-number {margin:0;color:var(--muted);font-size:14px;line-height:1.6;}
+.success-order-number strong {color:var(--cream);}
+.success-receipt__grid {display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,300px);gap:32px;align-items:start;padding-top:32px;}
+.success-movie {min-width:0;}
+.success-movie h2 {font-size:clamp(25px,3vw,34px);line-height:1.3;margin:0 0 24px;overflow-wrap:anywhere;}
+.success-details {margin:0;display:grid;gap:16px;padding-bottom:24px;border-bottom:1px dashed var(--line);}
+.success-details > div {display:grid;grid-template-columns:100px minmax(0,1fr);gap:16px;align-items:baseline;line-height:1.6;}
+.success-details dt {font-size:14px;font-weight:500;color:var(--muted);}
+.success-details dd {margin:0;font-size:14px;overflow-wrap:anywhere;text-align:right;}
+.success-tickets,.success-combos {margin-top:24px;}
+.success-tickets h3,.success-combos h3 {font-size:16px;line-height:1.5;margin:0 0 12px;}
+.success-ticket-list {list-style:none;margin:0;padding:0;display:grid;gap:10px;}
+.success-ticket-list li {display:grid;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:rgba(10,10,10,.2);min-width:0;}
+.success-ticket-seat {font-size:12px;font-weight:700;color:var(--peach);line-height:1.5;}
+.success-ticket-list code {display:block;min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:normal;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.8;color:var(--cream);}
+.success-combos p {font-size:14px;line-height:1.6;margin:8px 0;overflow-wrap:anywhere;}
+.success-summary {min-width:0;padding:24px;border:1px solid var(--line);border-radius:10px;background:rgba(10,10,10,.2);display:grid;gap:22px;}
+.success-booked-at,.success-amount {display:grid;gap:10px;line-height:1.6;}
+.success-booked-at > span,.success-amount > span {font-size:13px;color:var(--muted);}
+.success-booked-at strong {font-size:14px;overflow-wrap:anywhere;}
+.success-amount {padding-top:20px;border-top:1px dashed var(--line);}
+.success-amount strong {font-size:clamp(21px,2.5vw,26px);line-height:1.4;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;color:var(--peach);}
+.success-status {justify-self:start;border:1px solid rgba(117,183,152,.4);border-radius:6px;padding:6px 10px;background:rgba(117,183,152,.08);color:var(--success);font-size:12px;line-height:1.5;}
+.success-actions {display:grid;gap:12px;}
+.success-actions .primary-button,.success-actions .secondary-button {box-sizing:border-box;height:auto;min-height:48px;margin:0;padding:14px 12px;font-size:14px;line-height:1.5;text-align:center;text-decoration:none;}
+@media(max-width:800px){.success-receipt__grid{grid-template-columns:1fr;gap:28px;}.success-summary{padding:22px;}.payment-success-page{padding:24px 0 40px;}}
+@media(max-width:420px){.success-details > div{grid-template-columns:82px minmax(0,1fr);gap:12px;}.success-receipt{padding:20px 16px;}.success-ticket-list li{padding:12px;}}

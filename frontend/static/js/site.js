@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-flash-notice]').forEach(function (notice) {
+        const timer = window.setTimeout(() => notice.remove(), 5000);
+        notice.querySelector('[data-notice-close]')?.addEventListener('click', () => {
+            window.clearTimeout(timer);
+            notice.remove();
+        });
+    });
     function applyNavbarProfileAvatar(src) {
         const navImages = document.querySelectorAll('[data-profile-avatar-image]');
         const navInitials = document.querySelectorAll('[data-profile-avatar-initial]');
@@ -41,18 +48,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.querySelectorAll('.staff-alert').forEach(function (alert) {
+        // Dynamic notices are reused after API calls and must stay in the DOM.
+        if (alert.hasAttribute('data-alert-persistent')) return;
         var duration = Number.parseInt(alert.dataset.alertDuration || '', 10);
 
         if (!Number.isFinite(duration) || duration <= 0) {
-            duration = alert.classList.contains('staff-alert-error') ? 5200 : 3200;
+            duration = 5000;
         }
 
         window.setTimeout(function () {
-            alert.classList.add('is-hiding');
-
-            window.setTimeout(function () {
-                alert.remove();
-            }, 240);
+            alert.remove();
         }, duration);
     })
     const widget = document.querySelector('.chatbot-widget');

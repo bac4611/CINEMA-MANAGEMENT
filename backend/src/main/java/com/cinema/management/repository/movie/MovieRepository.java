@@ -9,6 +9,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MovieRepository extends JpaRepository<Movie, Integer> {
+    @Query(value = """
+            SELECT (SELECT COUNT(*) FROM PaymentIntents WHERE MovieID = :movieId)
+                 + (SELECT COUNT(*) FROM BookingHolds WHERE MovieID = :movieId)
+                 + (SELECT COUNT(*) FROM Reviews WHERE MovieID = :movieId)
+            """, nativeQuery = true)
+    long countBookingReferences(@Param("movieId") Integer movieId);
     List<Movie> findByTitleContainingIgnoreCaseOrderByReleaseDateDesc(String title);
     List<Movie> findByReleaseDateGreaterThanEqualOrderByReleaseDate(LocalDate releaseDate);
 
