@@ -793,3 +793,15 @@ body > div[aria-live="polite"][aria-atomic="true"] .btn-close:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Flash notices have their own layout to avoid Bootstrap/toast style collisions. */
+.cosmos-notices {position:fixed;top:24px;right:24px;z-index:100100;display:grid;gap:12px;width:min(420px,calc(100vw - 32px));pointer-events:none;}
+.cosmos-notice {box-sizing:border-box;display:grid;grid-template-columns:24px minmax(0,1fr) 28px;align-items:start;gap:12px;padding:16px;border:1px solid;border-left-width:4px;border-radius:10px;box-shadow:0 12px 36px #0004;pointer-events:auto;font-family:var(--font-body),sans-serif;}
+.cosmos-notice--success {background:#123c2b;border-color:#37b876;color:#e1ffec;}
+.cosmos-notice--error {background:#521f25;border-color:#f06a75;color:#ffe8eb;}
+.cosmos-notice__icon {display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#ffffff18;font-size:16px;font-weight:800;line-height:1.5;}
+.cosmos-notice .cosmos-notice__message {min-width:0;margin:0;padding:0;color:inherit;font-size:14px;font-weight:500;line-height:1.65;white-space:normal;overflow-wrap:anywhere;}
+.cosmos-notice .cosmos-notice__close {display:grid;place-items:center;box-sizing:border-box;width:28px;height:28px;margin:0;padding:0;border:0;border-radius:6px;background:transparent;color:inherit;font:400 24px/1 sans-serif;cursor:pointer;}
+.cosmos-notice__close:hover {background:#ffffff18;}
+.cosmos-notice__close:focus-visible {outline:2px solid currentColor;outline-offset:2px;}
+@media(max-width:600px){.cosmos-notices{top:16px;right:16px;}}

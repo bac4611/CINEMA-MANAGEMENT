@@ -10,6 +10,14 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ShowtimeRepository extends JpaRepository<Showtime, Integer> {
+    @Query("select s from Showtime s where s.startTime < :until and s.endTime > :from")
+    List<Showtime> findOverlappingWindow(@Param("from") LocalDateTime from, @Param("until") LocalDateTime until);
+    @Query(value = """
+            SELECT (SELECT COUNT(*) FROM PaymentIntents WHERE ShowtimeID = :showtimeId)
+                 + (SELECT COUNT(*) FROM BookingHolds WHERE ShowtimeID = :showtimeId)
+                 + (SELECT COUNT(*) FROM BookingSeatHolds WHERE ShowtimeID = :showtimeId)
+            """, nativeQuery = true)
+    long countBookingReferences(@Param("showtimeId") Integer showtimeId);
     List<Showtime> findByMovieMovieIdAndDateOrderByStartTime(
             Integer movieId, LocalDate date);
     List<Showtime> findByMovieMovieIdOrderByDateAscStartTimeAsc(Integer movieId);
