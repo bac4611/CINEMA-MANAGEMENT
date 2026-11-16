@@ -48,7 +48,10 @@
             <div class="auth-divider"><span>hoặc</span></div>
             <form th:action="@{/GoogleAuth/Login}" method="post">
                 <input type="hidden" name="returnUrl" th:value="${param.ReturnUrl != null ? param.ReturnUrl[0] : ''}">
-                <button type="submit" class="btn-google"><span>Đăng nhập với Google</span></button>
+                <button type="submit" class="btn-google">
+                    <img class="btn-google-logo" th:src="@{/images/common/google.svg}" alt="" width="20" height="20" aria-hidden="true">
+                    <span>Đăng nhập với Google</span>
+                </button>
             </form>
         </th:block>
         <p class="auth-switch-copy">Chưa có tài khoản? <a th:href="@{/Account/Register}">Tạo tài khoản mới</a></p>

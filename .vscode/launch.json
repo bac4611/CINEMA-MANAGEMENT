@@ -3,6 +3,21 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Spring Boot-CinemaApplication (Google Login)",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "mainClass": "com.cinema.management.CinemaApplication",
+            "projectName": "cinema-backend",
+            "envFile": "${workspaceFolder}/.env",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "dev,google"
+            },
+            "vmArgs": "-Djava.library.path=${workspaceFolder}/backend/target/native",
+            "preLaunchTask": "Prepare SQL Server Windows Authentication DLL",
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "java",
             "name": "Spring Boot-CinemaApplication<cinema-backend>",
             "request": "launch",
             "cwd": "${workspaceFolder}/backend",

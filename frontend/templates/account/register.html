@@ -43,7 +43,12 @@
             <button type="submit" class="btn btn-submit">Tạo tài khoản</button>
         </form>
         <th:block th:if="${googleLoginEnabled}"><div class="auth-divider"><span>hoặc</span></div>
-            <form th:action="@{/GoogleAuth/Login}" method="post"><button type="submit" class="btn-google">Đăng nhập với Google</button></form></th:block>
+            <form th:action="@{/GoogleAuth/Login}" method="post">
+                <button type="submit" class="btn-google">
+                    <img class="btn-google-logo" th:src="@{/images/common/google.svg}" alt="" width="20" height="20" aria-hidden="true">
+                    <span>Đăng nhập với Google</span>
+                </button>
+            </form></th:block>
         <p class="auth-switch-copy">Đã có tài khoản? <a th:href="@{/Account/Login}">Đăng nhập</a></p>
     </div></div></section>
 </main><script th:src="@{/js/auth.js}"></script></body></html>
