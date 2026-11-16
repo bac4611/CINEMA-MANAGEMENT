@@ -1,5 +1,7 @@
 package com.cinema.management.service.account;
 
+import com.cinema.management.config.GoogleOAuthConfiguration;
+
 import com.cinema.management.model.dto.request.LoginRequest;
 import com.cinema.management.model.dto.request.ProfileRequest;
 import com.cinema.management.model.entity.account.User;
@@ -58,8 +60,7 @@ public class DefaultAccountService implements AccountService {
 
     @Override
     public boolean isGoogleLoginEnabled() {
-        return hasText(environment.getProperty("spring.security.oauth2.client.registration.google.client-id"))
-                && hasText(environment.getProperty("spring.security.oauth2.client.registration.google.client-secret"));
+        return GoogleOAuthConfiguration.isConfigured(environment);
     }
 
     @Override

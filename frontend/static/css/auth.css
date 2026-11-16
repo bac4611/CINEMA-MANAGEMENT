@@ -551,6 +551,14 @@
     transform: translateY(-1px);
 }
 
+.btn-google-logo {
+    display: block;
+    flex: 0 0 20px;
+    height: 20px;
+    width: 20px;
+    object-fit: contain;
+}
+
 .btn-google-mark {
     align-items: center;
     border: 1px solid #dadce0;

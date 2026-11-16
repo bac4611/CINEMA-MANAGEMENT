@@ -7,6 +7,16 @@
 - `database`: SQL schema, seed, and test scripts.
 - `docker`: Backend and SQL Server container definitions.
 
+## GitHub Actions
+
+The workflow lives at `.github/workflows/deploy.yml`. It runs on pull requests
+to `main`, pushes to `main`, or manually through GitHub Actions. It sets up
+Java 21, runs Maven tests, and packages the backend with the frontend resources.
+Tests use the existing H2 test configuration; the application still uses SQL Server.
+The JAR and Windows authentication DLL are retained as an artifact for seven days.
+No server deployment is configured yet; a hosting target and deployment secrets
+must be supplied before adding that step.
+
 Frontend files live directly under `frontend`, without a Java source tree:
 
 ```text
