@@ -187,6 +187,12 @@ create table Users (
 
     EmailVerificationTokenHash VARCHAR(64) NULL,
 
+    PasswordResetTokenHash VARCHAR(64) NULL,
+
+    PasswordResetTokenExpiresAt DATETIME2 NULL,
+
+    PasswordResetLastSentAt DATETIME2 NULL,
+
     ExternalProvider NVARCHAR(50) NULL,
 
     ExternalProviderKey NVARCHAR(200) NULL,

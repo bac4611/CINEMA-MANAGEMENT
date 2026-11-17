@@ -1,0 +1,60 @@
+name: Cinema CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test (Java 21)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 21 and Maven cache
+        uses: actions/setup-java@v6.3.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: |
+            pom.xml
+            backend/pom.xml
+            .mvn/wrapper/maven-wrapper.properties
+
+      # Invoke with bash because mvnw is tracked without the executable bit.
+      # Existing test resources configure H2; no SQL Server or secrets are needed.
+      - name: Build, test and package
+        run: bash ./mvnw --batch-mode --no-transfer-progress clean verify
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: test-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            backend/target/surefire-reports/
+            backend/target/failsafe-reports/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload application JAR
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: cinema-jar-${{ github.sha }}-${{ github.run_attempt }}
+          path: backend/target/*.jar
+          if-no-files-found: error
+          retention-days: 14
