@@ -1,0 +1,30 @@
+name: cinema
+
+services:
+  cinema:
+    image: bacdepzaiz7/cinema:${CINEMA_IMAGE_TAG:?Set CINEMA_IMAGE_TAG to a published commit SHA}
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-production}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:?Configure the production SQL Server JDBC URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:?Configure the SQL Server application login}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Configure the SQL Server password}
+      JWT_KEY: ${JWT_KEY:?Configure a random JWT signing key of at least 32 bytes}
+    ports:
+      - "127.0.0.1:${CINEMA_HTTP_PORT:-8080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

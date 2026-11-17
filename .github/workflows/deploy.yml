@@ -6,13 +6,20 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Authorize a production deployment of main (VPS must be enabled and configured)'
+        type: boolean
+        required: true
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
   group: cinema-build-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never interrupt a running production deployment.
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -38,6 +45,9 @@ jobs:
 
       # Tests use the existing H2 test configuration, never the local SQL Server.
       # Maven also packages frontend/templates and frontend/static into the JAR.
+      - name: Check deployment success and rollback behavior
+        run: bash scripts/tests/deploy-test.sh
+
       - name: Test and package
         run: bash ./mvnw --batch-mode --no-transfer-progress -pl backend -am verify
 
@@ -51,4 +61,124 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      # Add a deployment job only after a hosting target and its secrets are configured.
+  docker:
+    name: Build Docker image and publish trusted main commits
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      published: ${{ steps.published.outputs.published }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Determine publishing eligibility
+        id: release
+        env:
+          TRUSTED_MAIN: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        run: |
+          echo "publish=$TRUSTED_MAIN" >> "$GITHUB_OUTPUT"
+
+      - name: Require Docker Hub credentials for publishing
+        if: steps.release.outputs.publish == 'true'
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          for key in DOCKERHUB_USERNAME DOCKERHUB_TOKEN; do
+            [[ -n "${!key}" ]] || { echo "::error::Missing $key repository secret; trusted main must publish before deployment."; exit 1; }
+          done
+          [[ "$DOCKERHUB_USERNAME" == bacdepzaiz7 ]] || { echo '::error::DOCKERHUB_USERNAME must be bacdepzaiz7 for this image namespace.'; exit 1; }
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        if: steps.release.outputs.publish == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build image (push only trusted main commits)
+        id: image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: ${{ steps.release.outputs.publish == 'true' }}
+          tags: bacdepzaiz7/cinema:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Confirm image was published
+        id: published
+        if: steps.release.outputs.publish == 'true'
+        env:
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          [[ "$IMAGE_DIGEST" == sha256:* ]] || { echo '::error::Image publishing returned no digest.'; exit 1; }
+          echo 'published=true' >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy to Ubuntu VPS
+    needs: [build, docker]
+    if: >-
+      needs.docker.outputs.published == 'true' &&
+      vars.ENABLE_VPS_DEPLOY == 'true' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: cinema-production
+      cancel-in-progress: false
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+    steps:
+      - name: Check required deployment configuration
+        run: |
+          for key in VPS_HOST VPS_USER VPS_PORT VPS_SSH_KEY VPS_KNOWN_HOSTS; do
+            [[ -n "${!key}" ]] || { echo "::error::Missing $key; configure production before enabling CD."; exit 1; }
+          done
+          [[ "$VPS_HOST" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] || { echo 'Invalid VPS_HOST (use an IPv4 address or DNS name).'; exit 1; }
+          [[ "$VPS_USER" =~ ^[a-z_][a-z0-9_-]*$ ]] || { echo 'Invalid VPS_USER.'; exit 1; }
+          [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]] && (( 10#$VPS_PORT >= 1 && 10#$VPS_PORT <= 65535 )) || { echo 'Invalid VPS_PORT.'; exit 1; }
+
+      - name: Checkout deployment files
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Deploy the published commit through verified SSH
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          ssh_dir=$(mktemp -d "$RUNNER_TEMP/cinema-ssh.XXXXXXXX")
+          trap 'rm -f "$ssh_dir/key" "$ssh_dir/known_hosts"; rmdir "$ssh_dir"' EXIT
+          printf '%s\n' "$VPS_SSH_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          ssh_opts=(-i "$ssh_dir/key" -o IdentitiesOnly=yes -o BatchMode=yes
+            -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$ssh_dir/known_hosts"
+            -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
+          remote="$VPS_USER@$VPS_HOST"
+          release="/opt/cinema/releases/$RELEASE_ID"
+          ssh "${ssh_opts[@]}" -p "$VPS_PORT" "$remote" \
+            "test -s /opt/cinema/.env && docker compose version && install -d -m 700 '$release'"
+          scp "${ssh_opts[@]}" -P "$VPS_PORT" compose.prod.yml scripts/deploy.sh "$remote:$release/"
+          ssh "${ssh_opts[@]}" -p "$VPS_PORT" "$remote" \
+            "bash '$release/deploy.sh' '$IMAGE_TAG' '$release/compose.prod.yml'"

@@ -5,7 +5,8 @@
 - `backend`: Spring Boot Java source and tests.
 - `frontend`: Thymeleaf templates and static assets.
 - `database`: SQL schema, seed, and test scripts.
-- `docker`: Backend and SQL Server container definitions.
+- `Dockerfile` and `compose.prod.yml`: application image and production runtime.
+- `docker`: reserved directories for container infrastructure.
 
 ## GitHub Actions
 
@@ -14,8 +15,10 @@ to `main`, pushes to `main`, or manually through GitHub Actions. It sets up
 Java 21, runs Maven tests, and packages the backend with the frontend resources.
 Tests use the existing H2 test configuration; the application still uses SQL Server.
 The JAR and Windows authentication DLL are retained as an artifact for seven days.
-No server deployment is configured yet; a hosting target and deployment secrets
-must be supplied before adding that step.
+After CI succeeds it builds the application image and can publish it to Docker
+Hub and deploy to an Ubuntu VPS. Production CD is disabled until its enable
+variable, secrets and VPS configuration are supplied. See
+[DEPLOYMENT.md](../DEPLOYMENT.md) for the complete setup and rollback procedure.
 
 Frontend files live directly under `frontend`, without a Java source tree:
 
@@ -64,10 +67,13 @@ Maven downloads the matching x64 DLL and copies it to
 `backend/target/native`. Both `spring-boot:run` and the checked-in VS Code
 launch configuration pass that directory through `java.library.path`.
 
-The connection can be overridden without editing source. An override must
-continue to use Windows Authentication:
+The development connection can be overridden without editing source:
 
 ```powershell
 $env:DB_URL = "jdbc:sqlserver://localhost:1433;databaseName=MovieTicketDB;integratedSecurity=true;authenticationScheme=NativeAuthentication;encrypt=true;trustServerCertificate=true"
 .\mvnw.cmd -pl backend spring-boot:run
 ```
+
+Linux production containers use SQL authentication through
+`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and
+`SPRING_DATASOURCE_PASSWORD`, with `SPRING_PROFILES_ACTIVE=production`.

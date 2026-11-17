@@ -37,6 +37,13 @@ build/
 !.env.example
 !**/.env.example
 
+### VPS deployment state ###
+/.deploy.lock
+/.deploy.*/
+/.deployed-*
+/.previous-*
+/releases/
+
 ### VS Code ###
 .vscode/*
 !.vscode/launch.json

@@ -1,0 +1,22 @@
+# Allow only build inputs; local secrets and generated files never enter context.
+**
+!Dockerfile
+!pom.xml
+!mvnw
+!.mvn/
+!.mvn/wrapper/
+!.mvn/wrapper/maven-wrapper.properties
+!backend/
+!backend/pom.xml
+!backend/src/
+!backend/src/**
+!frontend/
+!frontend/templates/
+!frontend/templates/**
+!frontend/static/
+!frontend/static/**
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/target/
