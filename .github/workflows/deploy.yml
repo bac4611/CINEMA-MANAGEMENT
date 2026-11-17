@@ -179,6 +179,6 @@ jobs:
           release="/opt/cinema/releases/$RELEASE_ID"
           ssh "${ssh_opts[@]}" -p "$VPS_PORT" "$remote" \
             "test -s /opt/cinema/.env && docker compose version && install -d -m 700 '$release'"
-          scp "${ssh_opts[@]}" -P "$VPS_PORT" compose.prod.yml scripts/deploy.sh "$remote:$release/"
+          scp -O "${ssh_opts[@]}" -P "$VPS_PORT" compose.prod.yml scripts/deploy.sh "$remote:$release/"
           ssh "${ssh_opts[@]}" -p "$VPS_PORT" "$remote" \
             "bash '$release/deploy.sh' '$IMAGE_TAG' '$release/compose.prod.yml'"
