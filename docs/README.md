@@ -1,5 +1,8 @@
 # Cinema Spring
 
+Giới thiệu dự án, website demo và tài liệu nghiệp vụ dành cho nhà tuyển dụng:
+[COSMOS Cinema — README chính](../README.md).
+
 ## Modules
 
 - `backend`: Spring Boot Java source and tests.
