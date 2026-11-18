@@ -46,7 +46,9 @@ jobs:
       # Tests use the existing H2 test configuration, never the local SQL Server.
       # Maven also packages frontend/templates and frontend/static into the JAR.
       - name: Check deployment success and rollback behavior
-        run: bash scripts/tests/deploy-test.sh
+        run: |
+          bash scripts/tests/deploy-test.sh
+          bash scripts/tests/deploy-ssh-test.sh
 
       - name: Test and package
         run: bash ./mvnw --batch-mode --no-transfer-progress -pl backend -am verify
@@ -165,22 +167,4 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
           RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-        run: |
-          set -Eeuo pipefail
-          umask 077
-          ssh_dir=$(mktemp -d "$RUNNER_TEMP/cinema-ssh.XXXXXXXX")
-          trap 'rm -f "$ssh_dir/key" "$ssh_dir/known_hosts"; rmdir "$ssh_dir"' EXIT
-          printf '%s\n' "$VPS_SSH_KEY" > "$ssh_dir/key"
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
-          ssh_opts=(-i "$ssh_dir/key" -o IdentitiesOnly=yes -o BatchMode=yes
-            -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$ssh_dir/known_hosts"
-            -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
-          remote="$VPS_USER@$VPS_HOST"
-          release="/opt/cinema/releases/$RELEASE_ID"
-          ssh "${ssh_opts[@]}" -p "$VPS_PORT" "$remote" \
-            "test -s /opt/cinema/.env && docker compose version && install -d -m 700 '$release'"
-          echo "Uploading deployment files..."
-          scp -v "${ssh_opts[@]}" -P "$VPS_PORT" compose.prod.yml scripts/deploy.sh "$remote:$release/"
-          echo "Upload complete. Starting deployment..."
-          ssh "${ssh_opts[@]}" -p "$VPS_PORT" "$remote" \
-            "bash '$release/deploy.sh' '$IMAGE_TAG' '$release/compose.prod.yml'"
+        run: bash scripts/deploy-ssh.sh
