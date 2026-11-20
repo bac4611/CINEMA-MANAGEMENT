@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<footer th:fragment="footer" class="cosmos-site-footer" aria-label="Thông tin COSMOS Cinema">
+    <div class="cosmos-site-footer__inner">
+        <div class="cosmos-site-footer__grid">
+            <section class="cosmos-site-footer__brand" aria-labelledby="footer-company">
+                <a class="cosmos-site-footer__logo" th:href="@{/movies}" aria-label="COSMOS Cinema — Danh sách phim">
+                    <img th:src="@{/images/common/cosmos.png}" src="/images/common/cosmos.png"
+                         alt="Logo COSMOS Cinema" width="224" height="105" loading="lazy">
+                </a>
+                <h2 id="footer-company">Công TNHH COSMOS CINEMA</h2>
+                <p>Mỗi thước phim, một cảm xúc.<br>Cùng COSMOS tận hưởng những câu chuyện trên màn ảnh lớn.</p>
+            </section>
+
+            <nav class="cosmos-site-footer__explore" aria-labelledby="footer-explore">
+                <h2 id="footer-explore">Khám phá</h2>
+                <a th:href="@{/movies}">Phim đang chiếu <span aria-hidden="true">↗</span></a>
+                <a th:href="@{/booking}">Lịch chiếu &amp; đặt vé <span aria-hidden="true">↗</span></a>
+                <a th:href="@{/ticket-pricing}">Giá vé <span aria-hidden="true">↗</span></a>
+            </nav>
+
+            <section class="cosmos-site-footer__contact" aria-labelledby="footer-contact">
+                <h2 id="footer-contact">Kết nối với COSMOS</h2>
+                <a class="cosmos-site-footer__contact-link" href="mailto:damxuanbachochbt10@gmail.com">
+                    <span class="cosmos-site-footer__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg>
+                    </span>
+                    <span><small>Email</small><strong>damxuanbachochbt10@gmail.com</strong></span>
+                </a>
+                <a class="cosmos-site-footer__contact-link" href="tel:+84916295600">
+                    <span class="cosmos-site-footer__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m7 3 3 5-2 2a15 15 0 0 0 6 6l2-2 5 3-1 3c-.3 1-1.4 1.4-2.4 1.1C10.4 19.1 4.9 13.6 2.9 6.4 2.6 5.4 3 4.3 4 4Z"/></svg>
+                    </span>
+                    <span><small>Số điện thoại</small><strong>0916 295 600</strong></span>
+                </a>
+                <div class="cosmos-site-footer__channels" aria-label="Kênh liên hệ và mạng xã hội">
+                    <a href="https://zalo.me/0916295600" target="_blank" rel="noopener noreferrer">
+                        <img th:src="@{/images/social/zalo.svg}" src="/images/social/zalo.svg" alt="" width="32" height="32" loading="lazy">
+                        <span><small>Zalo</small><strong>0916 295 600</strong></span>
+                    </a>
+                    <a href="https://www.facebook.com/bacmothaiba" target="_blank" rel="noopener noreferrer">
+                        <img th:src="@{/images/social/facebook.svg}" src="/images/social/facebook.svg" alt="" width="32" height="32" loading="lazy">
+                        <span><small>Facebook</small><strong>bacmothaiba</strong></span>
+                    </a>
+                    <a href="https://www.instagram.com/bac_06123/" target="_blank" rel="noopener noreferrer">
+                        <img th:src="@{/images/social/instagram.svg}" src="/images/social/instagram.svg" alt="" width="32" height="32" loading="lazy">
+                        <span><small>Instagram</small><strong>@bac_06123</strong></span>
+                    </a>
+                    <a href="https://github.com/bac4611" target="_blank" rel="noopener noreferrer">
+                        <img th:src="@{/images/social/github.svg}" src="/images/social/github.svg" alt="" width="32" height="32" loading="lazy">
+                        <span><small>GitHub</small><strong>bac4611</strong></span>
+                    </a>
+                </div>
+            </section>
+        </div>
+        <div class="cosmos-site-footer__bottom">
+            <p>© <span th:text="${#dates.year(#dates.createNow())}">2026</span> COSMOS CINEMA. Mọi quyền được bảo lưu.</p>
+            <span>Hẹn bạn ở suất chiếu tiếp theo.</span>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

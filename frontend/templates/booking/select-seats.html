@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chọn ghế | Cosmos Cinema</title><link rel="stylesheet" th:href="@{/css/select-seats.css}"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chọn ghế | Cosmos Cinema</title><link rel="stylesheet" th:href="@{/css/select-seats.css}"><link rel="stylesheet" th:href="@{/css/footer.css}"></head>
 <body th:with="b=${booking}">
 <header class="site-header"><div class="shell header-row">
 <a th:href="@{/home}" class="brand"><span class="brand-mark" aria-hidden="true"></span> COSMOS CINEMA</a>
@@ -27,4 +27,6 @@
 <div class="selected-list" id="selectedSeatsList" aria-live="polite"><div th:if="${#lists.isEmpty(b.selectedSeats)}" class="empty-state">Chọn ghế từ sơ đồ</div><div th:each="code : ${b.selectedSeats}" class="selected-line"><span th:text="|Ghế ${code}|"></span><span th:text="${#numbers.formatDecimal(b.seatPrice(code),0,'POINT',0,'COMMA')} + ' ₫'"></span></div></div>
 <div class="totals"><div class="total-line"><span id="ticketCount" th:text="|Số lượng ghế (${#lists.size(b.selectedSeats)})|"></span><span id="ticketSubtotal" th:text="${#numbers.formatDecimal(b.ticketSubtotal,0,'POINT',0,'COMMA')} + ' ₫'"></span></div></div>
 <div class="summary-actions"><button type="submit" class="primary-button full" id="confirmSeatButton" th:disabled="${#lists.isEmpty(b.selectedSeats)}">Xác nhận đặt ghế →</button><a class="secondary-button full" th:href="@{/booking/select-showtime(movieId=${b.movieId})}">← Thay đổi suất chiếu</a></div><p class="secure-note">▱ Giao dịch được bảo mật</p></aside>
-</form></div></main><script th:src="@{/js/select-seats.js}" defer></script></body></html>
+</form></div></main>
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+<script th:src="@{/js/select-seats.js}" defer></script></body></html>

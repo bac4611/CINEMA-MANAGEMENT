@@ -10,6 +10,7 @@
     <link rel="stylesheet" th:href="@{/vendor/bootstrap/dist/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/css/site.css}">
     <link rel="stylesheet" th:href="@{/css/layout.css}">
+    <link rel="stylesheet" th:href="@{/css/footer.css}">
     <th:block th:replace="${pageStyles}"></th:block>
 </head>
 <body>
@@ -63,10 +64,7 @@
     </div>
 </div>
 
-<footer class="cosmos-account-footer">
-    <span th:text="'© ' + ${#dates.year(#dates.createNow())} + ' COSMOS CINEMA'">COSMOS CINEMA</span>
-    <a th:href="@{/home}">Trang chủ</a>
-</footer>
+<footer th:replace="~{fragments/footer :: footer}"></footer>
 
 <div th:replace="~{fragments/chatbot :: widget}"></div>
 
