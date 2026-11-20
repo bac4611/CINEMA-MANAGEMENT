@@ -130,14 +130,29 @@ public class StaffController {
         return movieResult(staff.createMovie(form), flash);
     }
 
+    @GetMapping("/staff/edit-movie")
+    public String editMovie(RedirectAttributes flash) {
+        flash.addFlashAttribute("alertError", "Vui lòng chọn phim trong danh sách và bấm Sửa phim.");
+        return "redirect:/staff";
+    }
+
     @PostMapping("/staff/edit-movie")
     public String editMovie(@Valid @ModelAttribute StaffMovieRequest form, BindingResult errors,
                             RedirectAttributes flash) {
+        if (form.getMovieId() <= 0) {
+            flash.addFlashAttribute("alertError", "Không xác định được phim cần sửa. Vui lòng chọn lại phim trong danh sách.");
+            return "redirect:/staff";
+        }
         if (errors.hasErrors()) {
             flash.addFlashAttribute("alertError", "Dữ liệu phim không hợp lệ.");
             return "redirect:/staff";
         }
-        return movieResult(staff.updateMovie(form), flash);
+        var result = staff.updateMovie(form);
+        if (result.status() == StaffService.Status.NOT_FOUND) {
+            flash.addFlashAttribute("alertError", "Phim không còn tồn tại hoặc đã bị xóa. Vui lòng chọn lại phim trong danh sách.");
+            return "redirect:/staff";
+        }
+        return movieResult(result, flash);
     }
 
     @PostMapping("/staff/deactivate-movie")
