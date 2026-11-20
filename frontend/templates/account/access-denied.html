@@ -7,7 +7,7 @@
     <section class="auth-wrapper"><div class="auth-container"><div class="auth-card">
         <p class="auth-form-kicker">COSMOS CINEMA</p>
         <h1 class="auth-state-title">Không có quyền truy cập</h1>
-        <p class="auth-state-text">Tài khoản của bạn không có quyền truy cập trang này.</p>
+        <p class="auth-state-text" th:text="${csrfError} ? 'Phiên gửi biểu mẫu đã hết hạn hoặc không hợp lệ. Vui lòng quay lại trang trước, tải lại và gửi lại biểu mẫu.' : 'Tài khoản của bạn không có quyền truy cập trang này.'">Tài khoản của bạn không có quyền truy cập trang này.</p>
         <a class="btn btn-submit auth-state-action" th:href="@{/home}">Về trang chủ</a>
     </div></div></section>
 </main>

@@ -22,6 +22,7 @@ class HomeControllerTests {
         when(home.getMovieDetails(7)).thenReturn(Optional.of(movie));
         when(home.isActiveUser(3)).thenReturn(true);
         MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addUserRole("KhachHang");
         request.getSession().setAttribute("UserID", 3);
         ConcurrentModel model = new ConcurrentModel();
 

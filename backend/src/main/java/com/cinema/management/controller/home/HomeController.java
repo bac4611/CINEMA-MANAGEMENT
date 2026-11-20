@@ -48,7 +48,10 @@ public class HomeController {
         var reviewForm = new MovieReviewFormViewModel();
         reviewForm.setMovieId(id);
         model.addAttribute("reviewForm", reviewForm);
-        model.addAttribute("canReview", home.isActiveUser(currentUserId(request)));
+        boolean activeUser = home.isActiveUser(currentUserId(request));
+        boolean customer = request.isUserInRole("KhachHang");
+        model.addAttribute("canReview", activeUser && customer);
+        model.addAttribute("reviewRequiresCustomerRole", activeUser && !customer);
         return "home/details";
     }
 

@@ -13,6 +13,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.WebAttributes;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -93,8 +95,11 @@ public class AccountController {
         return "redirect:/account/login";
     }
 
-    @GetMapping("/account/access-denied")
-    public String accessDenied() {
+    // Security forwards denied requests with the original HTTP method. This
+    // read-only error view must also render POST/PUT/etc., preserving status 403.
+    @RequestMapping("/account/access-denied")
+    public String accessDenied(HttpServletRequest request, Model model) {
+        model.addAttribute("csrfError", request.getAttribute(WebAttributes.ACCESS_DENIED_403) instanceof CsrfException);
         return "account/access-denied";
     }
 
