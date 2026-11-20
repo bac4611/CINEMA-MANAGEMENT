@@ -51,7 +51,7 @@
     </div>
 
     <div id="movieCreateModal" class="modal-backdrop">
-        <form class="modal-dialog modal-lg" method="post" th:action="@{/Staff/CreateMovie}">
+        <form class="modal-dialog modal-lg" method="post" th:action="@{/staff/create-movie}">
             <div class="modal-header"><div><p class="modal-pretitle">THÊM MỚI PHIM</p><h3>THÊM DỮ LIỆU PHIM</h3></div><button type="button" class="btn-close-modal">×</button></div>
             <div class="modal-body staff-movie-form">
                 <div class="form-group"><label>TIÊU ĐỀ PHIM</label><input name="title" required></div>
@@ -67,9 +67,9 @@
         </form>
     </div>
 
-    <form id="deleteMovieForm" th:action="@{/Staff/DeactivateMovie}" method="post" hidden><input type="hidden" name="id"></form>
+    <form id="deleteMovieForm" th:action="@{/staff/deactivate-movie}" method="post" hidden><input type="hidden" name="id"></form>
     <div id="movieEditorModal" class="modal-backdrop">
-        <form class="modal-dialog modal-lg" method="post" th:action="@{/Staff/EditMovie}">
+        <form class="modal-dialog modal-lg" method="post" th:action="@{/staff/edit-movie}">
             <input type="hidden" name="movieId" id="editMovieId">
             <div class="modal-header"><div><p class="modal-pretitle">CẬP NHẬT PHIM</p><h3>CẬP NHẬT DỮ LIỆU PHIM</h3></div><button type="button" class="btn-close-modal">×</button></div>
             <div class="modal-body staff-movie-form">

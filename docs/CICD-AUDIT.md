@@ -161,7 +161,7 @@ docker logs --tail 100 "$container_id"
 docker compose --project-name cinema --env-file .env -f compose.prod.yml exec -T cinema \
   wget -q -O - http://127.0.0.1:8081/actuator/health/readiness
 curl --fail --silent --show-error -o /dev/null -w '%{http_code}\n' \
-  "http://127.0.0.1:${CINEMA_HTTP_PORT:-8080}/Account/Login"
+  "http://127.0.0.1:${CINEMA_HTTP_PORT:-8080}/account/login"
 ```
 
 Kỳ vọng: service running/healthy, image đúng SHA, readiness `status=UP`, trang

@@ -6,7 +6,7 @@
     <section class="auth-wrapper auth-page-register"><div class="auth-shell max-w-7xl mx-auto"><div class="auth-form-panel">
         <div class="auth-form-heading"><p class="auth-form-kicker">COSMOS CINEMA</p><h2>Tạo tài khoản</h2>
             <p>Thông tin này giúp COSMOS phục vụ đặt vé và liên hệ chính xác hơn.</p></div>
-        <form class="auth-form" th:action="@{/Account/Register}" th:object="${register}" method="post" novalidate>
+        <form class="auth-form" th:action="@{/account/register}" th:object="${register}" method="post" novalidate>
             <div class="auth-validation-summary" th:if="${#fields.hasGlobalErrors()}">
                 <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Dữ liệu không hợp lệ</p>
             </div>
@@ -43,12 +43,12 @@
             <button type="submit" class="btn btn-submit">Tạo tài khoản</button>
         </form>
         <th:block th:if="${googleLoginEnabled}"><div class="auth-divider"><span>hoặc</span></div>
-            <form th:action="@{/GoogleAuth/Login}" method="post">
+            <form th:action="@{/google-auth/login}" method="post">
                 <button type="submit" class="btn-google">
                     <img class="btn-google-logo" th:src="@{/images/common/google.svg}" alt="" width="20" height="20" aria-hidden="true">
                     <span>Đăng nhập với Google</span>
                 </button>
             </form></th:block>
-        <p class="auth-switch-copy">Đã có tài khoản? <a th:href="@{/Account/Login}">Đăng nhập</a></p>
+        <p class="auth-switch-copy">Đã có tài khoản? <a th:href="@{/account/login}">Đăng nhập</a></p>
     </div></div></section>
 </main><script th:src="@{/js/auth.js}"></script></body></html>

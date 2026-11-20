@@ -19,7 +19,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Controller
-@RequestMapping({"/Staff", "/staff"})
 public class StaffController {
     private final StaffService staff;
 
@@ -27,20 +26,20 @@ public class StaffController {
         this.staff = staff;
     }
 
-    @GetMapping({"", "/", "/Index", "/index"})
+    @GetMapping("/staff")
     public String index(Model model) {
         model.addAttribute("activeTab", "scheduling");
         model.addAttribute("schedule", staff.getSchedulePage());
         return "staff/index";
     }
 
-    @GetMapping({"/GetSchedule", "/schedule"})
+    @GetMapping("/staff/schedule")
     @ResponseBody
     public ResponseEntity<?> getSchedule(@RequestParam LocalDate date) {
         return ResponseEntity.ok(staff.getSchedule(date));
     }
 
-    @GetMapping({"/GetScreeningRoomState", "/screening-room-state"})
+    @GetMapping("/staff/screening-room-state")
     @ResponseBody
     public ResponseEntity<?> getScreeningRoomState(@RequestParam int roomId,
                                                     @RequestParam(required = false) LocalDate date,
@@ -55,7 +54,7 @@ public class StaffController {
         }
     }
 
-    @PostMapping({"/SaveSchedule", "/save-schedule"})
+    @PostMapping("/staff/save-schedule")
     @ResponseBody
     public ResponseEntity<?> saveSchedule(@Valid @RequestBody(required = false) SaveScheduleRequest request,
                                           BindingResult errors) {
@@ -71,26 +70,26 @@ public class StaffController {
         return operation(staff.saveSchedule(request));
     }
 
-    @GetMapping({"/Halls", "/halls"})
+    @GetMapping("/staff/halls")
     public String halls(Model model) {
         model.addAttribute("activeTab", "halls");
         model.addAttribute("halls", staff.getHalls());
         return "staff/halls";
     }
 
-    @GetMapping({"/Concessions", "/concessions"})
+    @GetMapping("/staff/concessions")
     public String concessions(Model model) {
         populateConcessions(model, null, null);
         return "staff/concessions";
     }
 
-    @GetMapping({"/CreateConcession", "/create-concession"})
+    @GetMapping("/staff/create-concession")
     public String createConcession(Model model) {
         populateConcessions(model, new Combo(), "create");
         return "staff/concessions";
     }
 
-    @PostMapping({"/CreateConcession", "/create-concession"})
+    @PostMapping("/staff/create-concession")
     public String createConcession(@Valid @ModelAttribute("form") Combo form, BindingResult errors,
                                    Model model, RedirectAttributes flash) {
         if (errors.hasErrors()) {
@@ -101,7 +100,7 @@ public class StaffController {
         return concessionResult(result, form, "create", model, flash);
     }
 
-    @GetMapping({"/EditConcession", "/edit-concession"})
+    @GetMapping("/staff/edit-concession")
     public String editConcession(@RequestParam int id, Model model) {
         if (id <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         Combo combo = staff.getConcession(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -109,7 +108,7 @@ public class StaffController {
         return "staff/concessions";
     }
 
-    @PostMapping({"/EditConcession", "/edit-concession"})
+    @PostMapping("/staff/edit-concession")
     public String editConcession(@Valid @ModelAttribute("form") Combo form, BindingResult errors,
                                  Model model, RedirectAttributes flash) {
         if (errors.hasErrors()) {
@@ -121,27 +120,27 @@ public class StaffController {
         return concessionResult(result, form, "edit", model, flash);
     }
 
-    @PostMapping({"/CreateMovie", "/create-movie"})
+    @PostMapping("/staff/create-movie")
     public String createMovie(@Valid @ModelAttribute StaffMovieRequest form, BindingResult errors,
                               RedirectAttributes flash) {
         if (errors.hasErrors()) {
             flash.addFlashAttribute("alertError", "Dữ liệu phim không hợp lệ.");
-            return "redirect:/Staff/Index";
+            return "redirect:/staff";
         }
         return movieResult(staff.createMovie(form), flash);
     }
 
-    @PostMapping({"/EditMovie", "/edit-movie"})
+    @PostMapping("/staff/edit-movie")
     public String editMovie(@Valid @ModelAttribute StaffMovieRequest form, BindingResult errors,
                             RedirectAttributes flash) {
         if (errors.hasErrors()) {
             flash.addFlashAttribute("alertError", "Dữ liệu phim không hợp lệ.");
-            return "redirect:/Staff/Index";
+            return "redirect:/staff";
         }
         return movieResult(staff.updateMovie(form), flash);
     }
 
-    @PostMapping({"/DeactivateMovie", "/deactivate-movie"})
+    @PostMapping("/staff/deactivate-movie")
     public String deactivateMovie(@RequestParam int id, RedirectAttributes flash) {
         return movieResult(staff.deleteMovie(id), flash);
     }
@@ -166,7 +165,7 @@ public class StaffController {
                                     Model model, RedirectAttributes flash) {
         if (result.status() == StaffService.Status.SUCCESS) {
             flash.addFlashAttribute("alertSuccess", result.message());
-            return "redirect:/Staff/Concessions";
+            return "redirect:/staff/concessions";
         }
         model.addAttribute("alertError", result.message());
         populateConcessions(model, form, mode);
@@ -177,6 +176,6 @@ public class StaffController {
         if (result.status() == StaffService.Status.NOT_FOUND) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         if (result.status() == StaffService.Status.SUCCESS) flash.addFlashAttribute("alertSuccess", result.message());
         else flash.addFlashAttribute("alertError", result.message());
-        return "redirect:/Staff/Index";
+        return "redirect:/staff";
     }
 }

@@ -25,14 +25,14 @@
             <span th:if="${!#strings.isEmpty(movie.ageRating)}" th:text="${movie.ageRating}"></span>
           </div>
           <div class="movie-hero__actions">
-            <a class="movie-btn movie-btn--primary" th:href="@{/Home/Details(id=${movie.movieId})}">Chi tiết</a>
-            <form th:action="@{/Booking/SelectShowtime}" method="get">
+            <a class="movie-btn movie-btn--primary" th:href="@{/movies/details(id=${movie.movieId})}">Chi tiết</a>
+            <form th:action="@{/booking/select-showtime}" method="get">
               <input type="hidden" name="movieId" th:value="${movie.movieId}">
               <button class="movie-btn movie-btn--ghost" type="submit">Đặt vé</button>
             </form>
           </div>
         </div>
-        <a class="movie-hero__poster" th:href="@{/Home/Details(id=${movie.movieId})}">
+        <a class="movie-hero__poster" th:href="@{/movies/details(id=${movie.movieId})}">
           <img th:src="${#strings.isEmpty(movie.posterUrl) ? '/images/posters/poster1.png' : movie.posterUrl}"
                th:alt="|Poster ${movie.title}|">
         </a>
@@ -54,18 +54,18 @@
       </header>
       <div th:if="${!#lists.isEmpty(allNowShowingMovies)}" class="movie-card-grid movie-card-grid--wide">
         <article th:each="movie : ${allNowShowingMovies}" class="movie-card">
-          <a class="movie-card__poster" th:href="@{/Home/Details(id=${movie.movieId})}">
+          <a class="movie-card__poster" th:href="@{/movies/details(id=${movie.movieId})}">
             <img th:src="${#strings.isEmpty(movie.posterUrl) ? '/images/posters/poster1.png' : movie.posterUrl}"
                  th:alt="${movie.title}" loading="lazy">
           </a>
           <div class="movie-card__body">
             <span class="movie-age" th:if="${!#strings.isEmpty(movie.ageRating)}" th:text="${movie.ageRating}"></span>
-            <a class="movie-card__title" th:href="@{/Home/Details(id=${movie.movieId})}" th:text="${movie.title}"></a>
+            <a class="movie-card__title" th:href="@{/movies/details(id=${movie.movieId})}" th:text="${movie.title}"></a>
             <p th:text="|${movie.genre} · ${movie.duration} phút|"></p>
             <div class="movie-card__rating"><span><i class="fa-solid fa-star"></i><span th:text="${movie.reviewCount > 0 ? #numbers.formatDecimal(movie.averageRating,1,1) : 'Mới'}"></span></span></div>
             <div class="movie-card__actions">
-              <a class="movie-card__button movie-card__button--outline" th:href="@{/Home/Details(id=${movie.movieId})}">Chi tiết</a>
-              <form th:action="@{/Booking/SelectShowtime}" method="get">
+              <a class="movie-card__button movie-card__button--outline" th:href="@{/movies/details(id=${movie.movieId})}">Chi tiết</a>
+              <form th:action="@{/booking/select-showtime}" method="get">
                 <input type="hidden" name="movieId" th:value="${movie.movieId}">
                 <button class="movie-card__button" type="submit">Đặt vé</button>
               </form>
@@ -84,15 +84,15 @@
       </header>
       <div th:if="${!#lists.isEmpty(allComingSoonMovies)}" class="movie-card-grid movie-card-grid--wide">
         <article th:each="movie : ${allComingSoonMovies}" class="movie-card">
-          <a class="movie-card__poster" th:href="@{/Home/Details(id=${movie.movieId})}">
+          <a class="movie-card__poster" th:href="@{/movies/details(id=${movie.movieId})}">
             <img th:src="${#strings.isEmpty(movie.posterUrl) ? '/images/posters/poster1.png' : movie.posterUrl}"
                  th:alt="${movie.title}" loading="lazy">
           </a>
           <div class="movie-card__body">
             <span class="movie-date-badge" th:text="|Khởi chiếu ${#temporals.format(movie.releaseDate,'dd/MM/yyyy')}|"></span>
-            <a class="movie-card__title" th:href="@{/Home/Details(id=${movie.movieId})}" th:text="${movie.title}"></a>
+            <a class="movie-card__title" th:href="@{/movies/details(id=${movie.movieId})}" th:text="${movie.title}"></a>
             <p th:text="${movie.genre}"></p>
-            <a class="movie-card__button movie-card__button--outline" th:href="@{/Home/Details(id=${movie.movieId})}">Xem chi tiết</a>
+            <a class="movie-card__button movie-card__button--outline" th:href="@{/movies/details(id=${movie.movieId})}">Xem chi tiết</a>
           </div>
         </article>
       </div>

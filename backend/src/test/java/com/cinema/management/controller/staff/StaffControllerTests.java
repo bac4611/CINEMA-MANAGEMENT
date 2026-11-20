@@ -40,26 +40,26 @@ class StaffControllerTests {
     void staffAreaAllowsStaffAndAdminButRejectsCustomer() throws Exception {
         when(staff.getSchedule(any())).thenReturn(List.of());
 
-        mvc.perform(get("/Staff/GetSchedule").param("date", "2026-11-12")
+        mvc.perform(get("/staff/schedule").param("date", "2026-11-12")
                         .with(user("customer").roles("KhachHang")))
                 .andExpect(status().isForbidden());
-        mvc.perform(get("/Staff/GetSchedule").param("date", "2026-11-12")
+        mvc.perform(get("/staff/schedule").param("date", "2026-11-12")
                         .with(user("staff").roles("Staff")))
                 .andExpect(status().isOk());
-        mvc.perform(get("/Staff/GetSchedule").param("date", "2026-11-12")
+        mvc.perform(get("/staff/schedule").param("date", "2026-11-12")
                         .with(user("admin").roles("Admin")))
                 .andExpect(status().isOk());
     }
 
     @Test
     void scheduleWriteRequiresCsrfAndDelegatesValidJson() throws Exception {
-        mvc.perform(post("/Staff/SaveSchedule").with(user("staff").roles("Staff"))
+        mvc.perform(post("/staff/save-schedule").with(user("staff").roles("Staff"))
                         .contentType("application/json").content("{\"date\":\"2026-11-12\",\"items\":[]}"))
                 .andExpect(status().isForbidden());
 
         when(staff.saveSchedule(any(SaveScheduleRequest.class))).thenReturn(
                 new StaffService.OperationResult(StaffService.Status.SUCCESS, "saved", 0, 0, 0, 0));
-        mvc.perform(post("/Staff/SaveSchedule").with(user("staff").roles("Staff")).with(csrf())
+        mvc.perform(post("/staff/save-schedule").with(user("staff").roles("Staff")).with(csrf())
                         .contentType("application/json").content("{\"date\":\"2026-11-12\",\"items\":[]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("saved"));
@@ -69,7 +69,7 @@ class StaffControllerTests {
     @Test
     void scheduleReadReturnsServicePayload() throws Exception {
         when(staff.getSchedule(any())).thenReturn(List.of());
-        mvc.perform(get("/Staff/GetSchedule").with(user("admin").roles("Admin"))
+        mvc.perform(get("/staff/schedule").with(user("admin").roles("Admin"))
                         .param("date", "2026-11-12"))
                 .andExpect(status().isOk())
                 .andExpect(content().json("[]"));

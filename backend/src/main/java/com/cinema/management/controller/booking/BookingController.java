@@ -17,7 +17,6 @@ import java.time.LocalDate;
 import java.util.*;
 
 @Controller
-@RequestMapping({"/Booking", "/booking"})
 public class BookingController {
     private static final String HOLD_ID = "BookingHoldId";
     private static final List<String> BOOKING_SESSION_KEYS = List.of(
@@ -31,7 +30,7 @@ public class BookingController {
         this.environment = environment;
     }
 
-    @GetMapping({"", "/", "/Index", "/index"})
+    @GetMapping("/booking")
     public String index(@RequestParam(required = false) Integer movieId,
                         @RequestParam(required = false) LocalDate date, Model model) {
         var schedule = bookings.getSchedule(movieId, date);
@@ -42,7 +41,7 @@ public class BookingController {
         return "booking/index";
     }
 
-    @GetMapping({"/SelectShowtime", "/select-showtime"})
+    @GetMapping("/booking/select-showtime")
     public String selectShowtime(@RequestParam int movieId, HttpServletRequest request,
                                  Model model, RedirectAttributes flash) {
         Integer userId = currentUserId(request);
@@ -51,37 +50,37 @@ public class BookingController {
         if (result.status() == BookingService.Status.NOT_FOUND) throw notFound();
         if (result.status() == BookingService.Status.PAYMENT_PENDING) {
             request.getSession().setAttribute("PaymentReference", result.paymentReference());
-            return "redirect:/Booking/Payment";
+            return "redirect:/booking/payment";
         }
         request.getSession().setAttribute(HOLD_ID, result.holdId().toString());
         model.addAttribute("booking", result.model());
         return "booking/select-showtime";
     }
 
-    @PostMapping({"/SelectShowtime", "/select-showtime"})
+    @PostMapping({"/booking/select-showtime", "/Booking/SelectShowtime", "/Booking/select-showtime", "/booking/SelectShowtime"})
     public String selectShowtime(@ModelAttribute SelectShowtimeRequest form, HttpServletRequest request,
                                  RedirectAttributes flash) {
         return selectShowtimeInternal(form, request, flash, false);
     }
 
-    @PostMapping({"/SelectShowtimeFromSchedule", "/select-showtime-from-schedule"})
+    @PostMapping({"/booking/select-showtime-from-schedule", "/Booking/SelectShowtimeFromSchedule", "/Booking/select-showtime-from-schedule", "/booking/SelectShowtimeFromSchedule"})
     public String selectShowtimeFromSchedule(@ModelAttribute SelectShowtimeRequest form,
                                              HttpServletRequest request, RedirectAttributes flash) {
         return selectShowtimeInternal(form, request, flash, true);
     }
 
-    @GetMapping({"/SelectShowtimeFromSchedule", "/select-showtime-from-schedule"})
+    @GetMapping("/booking/select-showtime-from-schedule")
     public String selectShowtimeFromScheduleGet() {
-        return "redirect:/Booking/Index";
+        return "redirect:/booking";
     }
 
-    @GetMapping({"/SelectSeats", "/select-seats"})
+    @GetMapping("/booking/select-seats")
     public String selectSeats(HttpServletRequest request, Model model, RedirectAttributes flash) {
         UUID holdId = currentHoldId(request);
         var booking = bookings.getBookingView(holdId, false).orElse(null);
         if (booking == null) {
             flash.addFlashAttribute("alertError", "Phiên giữ chỗ không tồn tại hoặc đã hết hạn.");
-            return "redirect:/Booking/Index";
+            return "redirect:/booking";
         }
         model.addAttribute("booking", booking);
         var seatRows = new TreeMap<String, List<com.cinema.management.model.viewmodel.booking.SeatChoiceViewModel>>();
@@ -92,21 +91,21 @@ public class BookingController {
         return "booking/select-seats";
     }
 
-    @PostMapping({"/SelectSeats", "/select-seats"})
+    @PostMapping({"/booking/select-seats", "/Booking/SelectSeats", "/Booking/select-seats", "/booking/SelectSeats"})
     public String selectSeatsPost(HttpServletRequest request, RedirectAttributes flash) {
         var result = bookings.validateSelectedSeats(currentHoldId(request));
         if (result.status() == BookingService.Status.EXPIRED) {
             flash.addFlashAttribute("alertError", result.message());
-            return "redirect:/Booking/Index";
+            return "redirect:/booking";
         }
         if (result.status() != BookingService.Status.SUCCESS) {
             flash.addFlashAttribute("alertError", result.message());
-            return "redirect:/Booking/SelectSeats";
+            return "redirect:/booking/select-seats";
         }
-        return "redirect:/Booking/SelectConcessions";
+        return "redirect:/booking/select-concessions";
     }
 
-    @PostMapping({"/HoldSeat", "/hold-seat"})
+    @PostMapping({"/booking/hold-seat", "/Booking/HoldSeat", "/Booking/hold-seat", "/booking/HoldSeat"})
     @ResponseBody
     public ResponseEntity<?> holdSeat(@RequestParam int seatId, @RequestParam boolean select,
                                       HttpServletRequest request) {
@@ -117,7 +116,7 @@ public class BookingController {
         return response(result.status(), result.message());
     }
 
-    @PostMapping({"/UpdateComboHold", "/update-combo-hold"})
+    @PostMapping({"/booking/update-combo-hold", "/Booking/UpdateComboHold", "/Booking/update-combo-hold", "/booking/UpdateComboHold"})
     @ResponseBody
     public ResponseEntity<?> updateComboHold(@RequestParam int comboId, @RequestParam int change,
                                              HttpServletRequest request) {
@@ -128,7 +127,7 @@ public class BookingController {
         return response(result.status(), result.message());
     }
 
-    @PostMapping({"/ClearComboHolds", "/clear-combo-holds"})
+    @PostMapping({"/booking/clear-combo-holds", "/Booking/ClearComboHolds", "/Booking/clear-combo-holds", "/booking/ClearComboHolds"})
     @ResponseBody
     public ResponseEntity<?> clearComboHolds(HttpServletRequest request) {
         var result = bookings.clearCombos(currentHoldId(request));
@@ -136,83 +135,83 @@ public class BookingController {
                 ? ResponseEntity.ok(Map.of("cleared", true)) : response(result.status(), result.message());
     }
 
-    @GetMapping({"/SelectConcessions", "/select-concessions"})
+    @GetMapping("/booking/select-concessions")
     public String selectConcessions(HttpServletRequest request, Model model, RedirectAttributes flash) {
         var booking = bookings.getBookingView(currentHoldId(request), true).orElse(null);
         if (booking == null) {
             flash.addFlashAttribute("alertError", "Phiên giữ chỗ đã hết hạn hoặc chưa chọn ghế.");
-            return "redirect:/Booking/SelectSeats";
+            return "redirect:/booking/select-seats";
         }
         model.addAttribute("booking", booking);
         return "booking/select-concessions";
     }
 
-    @PostMapping({"/SelectConcessions", "/select-concessions"})
+    @PostMapping({"/booking/select-concessions", "/Booking/SelectConcessions", "/Booking/select-concessions", "/booking/SelectConcessions"})
     public String selectConcessions(@ModelAttribute SelectConcessionsRequest ignored,
                                     HttpServletRequest request, RedirectAttributes flash) {
         var result = bookings.validateSelectedSeats(currentHoldId(request));
         if (result.status() != BookingService.Status.SUCCESS) {
             flash.addFlashAttribute("alertError", result.message());
             return result.status() == BookingService.Status.EXPIRED
-                    ? "redirect:/Booking/Index" : "redirect:/Booking/SelectSeats";
+                    ? "redirect:/booking" : "redirect:/booking/select-seats";
         }
-        return "redirect:/Booking/Checkout";
+        return "redirect:/booking/checkout";
     }
 
-    @GetMapping({"/Checkout", "/checkout"})
+    @GetMapping("/booking/checkout")
     public String checkout(HttpServletRequest request, Model model, RedirectAttributes flash) {
         var booking = bookings.getBookingView(currentHoldId(request), true).orElse(null);
         if (booking == null) {
             flash.addFlashAttribute("alertError", "Phiên giữ chỗ đã hết hạn hoặc chưa chọn ghế.");
-            return "redirect:/Booking/Index";
+            return "redirect:/booking";
         }
         model.addAttribute("booking", booking);
         return "booking/checkout";
     }
 
-    @PostMapping({"/StartPayment", "/start-payment"})
+    @PostMapping({"/booking/start-payment", "/Booking/StartPayment", "/Booking/start-payment", "/booking/StartPayment"})
     public String startPayment(HttpServletRequest request, RedirectAttributes flash) {
         Integer userId = currentUserId(request);
-        if (userId == null) return "redirect:/Account/Login";
+        if (userId == null) return "redirect:/account/login";
         var result = bookings.startPayment(userId, currentHoldId(request));
         if (result.status() != BookingService.Status.SUCCESS) {
             flash.addFlashAttribute("paymentError", result.message());
             return result.status() == BookingService.Status.EXPIRED
-                    ? "redirect:/Booking/Index" : "redirect:/Booking/Checkout";
+                    ? "redirect:/booking" : "redirect:/booking/checkout";
         }
         request.getSession().setAttribute("PaymentReference", result.paymentReference());
         request.getSession().setAttribute("PaymentExpiresAtUtc", result.expiresAt().toString());
-        return "redirect:/Booking/Payment";
+        return "redirect:/booking/payment";
     }
 
-    @GetMapping({"/Payment", "/payment"})
+    @GetMapping({"/booking/payment", "/Booking/Payment", "/Booking/payment", "/booking/Payment"})
     public String payment(HttpServletRequest request, Model model, RedirectAttributes flash) {
         Integer userId = currentUserId(request);
-        if (userId == null) return "redirect:/Account/Login";
+        if (userId == null) return "redirect:/account/login";
         String reference = sessionString(request, "PaymentReference");
         if (!hasText(reference)) {
             reference = bookings.findPendingPaymentReference(currentHoldId(request), userId).orElse(null);
         }
-        if (!hasText(reference)) return "redirect:/Booking/Checkout";
+        if (!hasText(reference)) return "redirect:/booking/checkout";
         var result = bookings.getPaymentPage(userId, reference);
         if (result.bookingId() != null) {
             clearBookingSession(request);
-            return "redirect:/Booking/PaymentSuccess?bookingId=" + result.bookingId();
+            return "redirect:/booking/payment-success?bookingId=" + result.bookingId();
         }
         if (result.status() != BookingService.Status.SUCCESS) {
             clearBookingSession(request);
             flash.addFlashAttribute("paymentError", result.message());
-            return "redirect:/Booking/Index";
+            return "redirect:/booking";
         }
         model.addAttribute("payment", result.model());
         return "booking/payment";
     }
 
-    @PostMapping({"/CompleteDevPayment", "/complete-dev-payment"})
+    @PostMapping({"/booking/complete-dev-payment", "/Booking/CompleteDevPayment", "/Booking/complete-dev-payment", "/booking/CompleteDevPayment"})
     public String completeDevPayment(@RequestParam String paymentReference,
                                      HttpServletRequest request, RedirectAttributes flash) {
         Integer userId = currentUserId(request);
-        if (userId == null) return "redirect:/Account/Login";
+        if (userId == null) return "redirect:/account/login";
         if (!isDevelopment()) throw notFound();
         if (!Objects.equals(paymentReference, sessionString(request, "PaymentReference"))) {
             throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -221,14 +220,14 @@ public class BookingController {
         var result = bookings.completeDevelopmentPayment(userId, paymentReference);
         if (result.status() != BookingService.Status.SUCCESS || result.bookingId() == null) {
             flash.addFlashAttribute("paymentError", result.message());
-            return "redirect:/Booking/Payment";
+            return "redirect:/booking/payment";
         }
         clearBookingSession(request);
         flash.addFlashAttribute("paymentSuccess", "Thanh toán thành công.");
-        return "redirect:/Booking/PaymentSuccess?bookingId=" + result.bookingId();
+        return "redirect:/booking/payment-success?bookingId=" + result.bookingId();
     }
 
-    @GetMapping({"/PaymentStatus", "/payment-status"})
+    @GetMapping({"/booking/payment-status", "/Booking/PaymentStatus", "/Booking/payment-status", "/booking/PaymentStatus"})
     @ResponseBody
     public ResponseEntity<?> paymentStatus(@RequestParam String paymentReference, HttpServletRequest request) {
         Integer userId = currentUserId(request);
@@ -250,34 +249,34 @@ public class BookingController {
         return ResponseEntity.ok(body);
     }
 
-    @GetMapping({"/BookingExpired", "/booking-expired"})
+    @GetMapping("/booking/booking-expired")
     public String bookingExpired(HttpServletRequest request, RedirectAttributes flash) {
         UUID holdId = currentHoldId(request);
         var state = bookings.getHoldState(holdId);
-        if (state.status() == BookingService.Status.PAYMENT_PENDING) return "redirect:/Booking/Payment";
+        if (state.status() == BookingService.Status.PAYMENT_PENDING) return "redirect:/booking/payment";
         if (state.status() == BookingService.Status.SUCCESS) {
             return state.showtimeId() == null
-                    ? "redirect:/Booking/SelectShowtime?movieId=" + state.movieId()
-                    : "redirect:/Booking/SelectSeats";
+                    ? "redirect:/booking/select-showtime?movieId=" + state.movieId()
+                    : "redirect:/booking/select-seats";
         }
         bookings.expireHold(holdId);
         clearBookingSession(request);
         flash.addFlashAttribute("alertError", "Phiên giữ chỗ 10 phút đã hết hạn. Ghế và combo đã được hoàn lại.");
-        return "redirect:/Booking/Index";
+        return "redirect:/booking";
     }
 
-    @PostMapping({"/CancelBooking", "/cancel-booking"})
+    @PostMapping({"/booking/cancel-booking", "/Booking/CancelBooking", "/Booking/cancel-booking", "/booking/CancelBooking"})
     public String cancelBooking(HttpServletRequest request, RedirectAttributes flash) {
         bookings.cancelHold(currentHoldId(request));
         clearBookingSession(request);
         flash.addFlashAttribute("bookingMessage", "Đã hủy quá trình đặt vé và hoàn lại ghế/combo.");
-        return "redirect:/Home/Index";
+        return "redirect:/home";
     }
 
-    @GetMapping({"/PaymentSuccess", "/payment-success"})
+    @GetMapping({"/booking/payment-success", "/Booking/PaymentSuccess", "/Booking/payment-success", "/booking/PaymentSuccess"})
     public String paymentSuccess(@RequestParam int bookingId, HttpServletRequest request, Model model) {
         Integer userId = currentUserId(request);
-        if (userId == null) return "redirect:/Account/Login";
+        if (userId == null) return "redirect:/account/login";
         var booking = bookings.getCompletedBooking(userId, bookingId).orElseThrow(this::notFound);
         model.addAttribute("booking", booking);
         return "booking/payment-success";
@@ -290,12 +289,12 @@ public class BookingController {
         var result = bookings.selectShowtime(userId, currentHoldId(request), form, requireFuture);
         if (result.status() == BookingService.Status.PAYMENT_PENDING) {
             request.getSession().setAttribute("PaymentReference", result.paymentReference());
-            return "redirect:/Booking/Payment";
+            return "redirect:/booking/payment";
         }
         if (result.status() != BookingService.Status.SUCCESS) {
             flash.addFlashAttribute("alertError", result.message());
-            return requireFuture ? "redirect:/Booking/Index"
-                    : "redirect:/Booking/SelectShowtime?movieId=" + form.getMovieId();
+            return requireFuture ? "redirect:/booking"
+                    : "redirect:/booking/select-showtime?movieId=" + form.getMovieId();
         }
         request.getSession().setAttribute(HOLD_ID, result.holdId().toString());
         request.getSession().setAttribute("SelectedShowtimeId", result.showtimeId());
@@ -307,12 +306,12 @@ public class BookingController {
         else request.getSession().removeAttribute("SelectedOfferCode");
         request.getSession().removeAttribute("SelectedSeats");
         request.getSession().removeAttribute("SelectedConcessions");
-        return "redirect:/Booking/SelectSeats";
+        return "redirect:/booking/select-seats";
     }
 
     private String requireLogin(RedirectAttributes flash) {
         flash.addFlashAttribute("alertError", "Vui lòng đăng nhập hoặc đăng ký tài khoản trước khi đặt vé.");
-        return "redirect:/Account/Login";
+        return "redirect:/account/login";
     }
 
     private ResponseEntity<?> response(BookingService.Status status, String message) {

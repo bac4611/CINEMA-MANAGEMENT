@@ -33,10 +33,10 @@ class GoogleLoginConfigurationTests {
 
     @Test
     void loginPageOffersGoogleAndPublicPostStartsAuthorization() throws Exception {
-        mvc.perform(get("/Account/Login"))
+        mvc.perform(get("/account/login"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("action=\"/GoogleAuth/Login\"")));
-        mvc.perform(post("/GoogleAuth/Login").with(csrf()))
+                .andExpect(content().string(containsString("action=\"/google-auth/login\"")));
+        mvc.perform(post("/google-auth/login").with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/oauth2/authorization/google"));
     }
@@ -49,7 +49,7 @@ class GoogleLoginConfigurationTests {
                 .andExpect(header().string("Location", containsString("client_id=cinema-test.apps.googleusercontent.com")))
                 .andExpect(header().string("Location", containsString("redirect_uri=http://localhost/login/oauth2/code/google")))
                 .andExpect(header().string("Location", containsString("state=")));
-        mvc.perform(post("/GoogleAuth/Login"))
+        mvc.perform(post("/google-auth/login"))
                 .andExpect(status().isForbidden());
     }
 }

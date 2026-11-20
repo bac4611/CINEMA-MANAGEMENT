@@ -26,7 +26,6 @@ import java.util.function.BiFunction;
 
 /** MVC endpoints. Business rules, persistence, password hashing and email delivery live in AccountService. */
 @Controller
-@RequestMapping({"/Account", "/account"})
 public class AccountController {
     private final AccountService accounts;
     private final UserSignInService signIn;
@@ -38,14 +37,14 @@ public class AccountController {
         this.validator = validator;
     }
 
-    @GetMapping({"/Login", "/login"})
+    @GetMapping("/account/login")
     public String login(Model model) {
         model.addAttribute("login", new LoginRequest());
         populateAuthView(model, null);
         return "account/login";
     }
 
-    @PostMapping({"/Login", "/login"})
+    @PostMapping({"/account/login", "/Account/Login", "/Account/login", "/account/Login"})
     public String login(@ModelAttribute("login") LoginRequest form, BindingResult errors,
                         Model model, HttpServletRequest request, HttpServletResponse response,
                         RedirectAttributes flash) {
@@ -77,13 +76,13 @@ public class AccountController {
         signIn.signIn(request, response, result.user(), form.isRememberMe());
         flash.addFlashAttribute("alertSuccess", "Đăng nhập thành công! Xin chào " + result.user().getFullName());
         return switch (result.user().getRole()) {
-            case "Admin" -> "redirect:/Admin/Index";
-            case "Staff" -> "redirect:/Staff/Index";
-            default -> "redirect:/Home/Index";
+            case "Admin" -> "redirect:/admin";
+            case "Staff" -> "redirect:/staff";
+            default -> "redirect:/home";
         };
     }
 
-    @PostMapping({"/Logout", "/logout"})
+    @PostMapping({"/account/logout", "/Account/Logout", "/Account/logout", "/account/Logout"})
     public String logout(HttpServletRequest request, RedirectAttributes flash) {
         var session = request.getSession(false);
         if (session != null) {
@@ -91,33 +90,33 @@ public class AccountController {
         }
         SecurityContextHolder.clearContext();
         flash.addFlashAttribute("alertSuccess", "Bạn đã đăng xuất thành công.");
-        return "redirect:/Account/Login";
+        return "redirect:/account/login";
     }
 
-    @GetMapping({"/AccessDenied", "/access-denied"})
+    @GetMapping("/account/access-denied")
     public String accessDenied() {
         return "account/access-denied";
     }
 
-    @GetMapping({"/Register", "/register"})
+    @GetMapping("/account/register")
     public String register(Model model) {
         model.addAttribute("register", new AuthViewModel());
         populateAuthView(model, null);
         return "account/register";
     }
 
-    @PostMapping({"/Register", "/register"})
+    @PostMapping({"/account/register", "/Account/Register", "/Account/register", "/account/Register"})
     public String register(@Valid @ModelAttribute("register") AuthViewModel form, BindingResult errors,
                            Model model, RedirectAttributes flash, HttpServletRequest request) {
         populateAuthView(model, null);
         if (errors.hasErrors()) {
             return "account/register";
         }
-        var result = accounts.register(form, linkBuilder(request, "ConfirmEmail"));
+        var result = accounts.register(form, linkBuilder(request, "confirm-email"));
         if (accounts.isDevelopment() && result.status() == AccountService.RegistrationStatus.CREATED) {
             flash.addFlashAttribute("alertSuccess",
                     "Đăng ký thành công. Tài khoản dev đã được xác minh tự động, bạn có thể đăng nhập ngay.");
-            return "redirect:/Account/Login";
+            return "redirect:/account/login";
         }
         switch (result.status()) {
             case DUPLICATE_ACCOUNT -> {
@@ -135,34 +134,34 @@ public class AccountController {
         return verificationSent(result.email(), flash);
     }
 
-    @GetMapping({"/EmailVerificationSent", "/email-verification-sent"})
+    @GetMapping("/account/email-verification-sent")
     public String emailVerificationSent(@RequestParam(defaultValue = "") String email, Model model) {
         model.addAttribute("email", email);
         return "account/email-verification-sent";
     }
 
-    @GetMapping({"/ForgotPassword", "/forgot-password"})
+    @GetMapping("/account/forgot-password")
     public String forgotPassword(Model model) {
         model.addAttribute("forgotPassword", new ForgotPasswordViewModel());
         return "account/forgot-password";
     }
 
-    @PostMapping({"/ForgotPassword", "/forgot-password"})
+    @PostMapping({"/account/forgot-password", "/Account/ForgotPassword", "/Account/forgot-password", "/account/ForgotPassword"})
     public String forgotPassword(@Valid @ModelAttribute("forgotPassword") ForgotPasswordViewModel form,
                                  BindingResult errors, HttpServletRequest request) {
         if (errors.hasErrors()) {
             return "account/forgot-password";
         }
-        accounts.forgotPassword(form.getEmail(), linkBuilder(request, "ResetPassword"));
-        return "redirect:/Account/ForgotPasswordConfirmation";
+        accounts.forgotPassword(form.getEmail(), linkBuilder(request, "reset-password"));
+        return "redirect:/account/forgot-password-confirmation";
     }
 
-    @GetMapping({"/ForgotPasswordConfirmation", "/forgot-password-confirmation"})
+    @GetMapping("/account/forgot-password-confirmation")
     public String forgotPasswordConfirmation() {
         return "account/forgot-password-confirmation";
     }
 
-    @GetMapping({"/ResetPassword", "/reset-password"})
+    @GetMapping("/account/reset-password")
     public String resetPassword(@RequestParam Integer userId,
                                 @RequestParam(defaultValue = "") String token, Model model) {
         var form = new ResetPasswordViewModel();
@@ -177,7 +176,7 @@ public class AccountController {
         return "account/reset-password";
     }
 
-    @PostMapping({"/ResetPassword", "/reset-password"})
+    @PostMapping({"/account/reset-password", "/Account/ResetPassword", "/Account/reset-password", "/account/ResetPassword"})
     public String resetPassword(@Valid @ModelAttribute("resetPassword") ResetPasswordViewModel form,
                                 BindingResult errors, RedirectAttributes flash) {
         if (errors.hasErrors()) {
@@ -188,28 +187,28 @@ public class AccountController {
             return "account/reset-password";
         }
         flash.addFlashAttribute("alertSuccess", "Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.");
-        return "redirect:/Account/ResetPasswordConfirmation";
+        return "redirect:/account/reset-password-confirmation";
     }
 
-    @GetMapping({"/ResetPasswordConfirmation", "/reset-password-confirmation"})
+    @GetMapping("/account/reset-password-confirmation")
     public String resetPasswordConfirmation() {
         return "account/reset-password-confirmation";
     }
 
-    @GetMapping({"/ConfirmEmail", "/confirm-email"})
+    @GetMapping("/account/confirm-email")
     public String confirmEmail(@RequestParam Integer userId, @RequestParam(defaultValue = "") String token,
                                RedirectAttributes flash) {
         boolean confirmed = accounts.confirmEmail(userId, token);
         flash.addFlashAttribute(confirmed ? "alertSuccess" : "alertError", confirmed
                 ? "Xác minh email thành công. Bạn có thể đăng nhập."
                 : "Liên kết xác minh email không hợp lệ hoặc đã hết hạn.");
-        return "redirect:/Account/Login";
+        return "redirect:/account/login";
     }
 
-    @PostMapping({"/ResendVerificationEmail", "/resend-verification-email"})
+    @PostMapping({"/account/resend-verification-email", "/Account/ResendVerificationEmail", "/Account/resend-verification-email", "/account/ResendVerificationEmail"})
     public String resendVerificationEmail(@RequestParam(defaultValue = "") String email,
                                           HttpServletRequest request, RedirectAttributes flash) {
-        var result = accounts.resendVerificationEmail(email, linkBuilder(request, "ConfirmEmail"));
+        var result = accounts.resendVerificationEmail(email, linkBuilder(request, "confirm-email"));
         String message = switch (result.status()) {
             case MISSING_EMAIL -> "Vui lòng nhập email để gửi lại xác minh.";
             case USER_NOT_FOUND -> "Nếu email tồn tại, hệ thống sẽ gửi lại email xác minh.";
@@ -225,21 +224,21 @@ public class AccountController {
         };
         flash.addFlashAttribute(success ? "alertSuccess" : "alertError", message);
         return switch (result.status()) {
-            case MISSING_EMAIL, USER_NOT_FOUND, ALREADY_CONFIRMED, INACTIVE -> "redirect:/Account/Login";
+            case MISSING_EMAIL, USER_NOT_FOUND, ALREADY_CONFIRMED, INACTIVE -> "redirect:/account/login";
             default -> verificationSent(result.email(), flash);
         };
     }
 
-    @GetMapping({"/Profile", "/profile"})
+    @GetMapping("/account/profile")
     public String profile(HttpServletRequest request, HttpServletResponse response, Model model) {
         response.setHeader("Cache-Control", "no-store");
         Integer userId = currentUserId(request);
         if (userId == null) {
-            return "redirect:/Account/Login";
+            return "redirect:/account/login";
         }
         var profile = accounts.loadProfile(userId).orElse(null);
         if (profile == null) {
-            return "redirect:/Account/Login";
+            return "redirect:/account/login";
         }
         var form = new ProfileRequest();
         form.setFullName(profile.fullName());
@@ -251,14 +250,14 @@ public class AccountController {
         return "account/profile";
     }
 
-    @PostMapping({"/Profile", "/profile"})
+    @PostMapping({"/account/profile", "/Account/Profile", "/Account/profile", "/account/Profile"})
     public String profile(@Valid @ModelAttribute("profile") ProfileRequest form, BindingResult errors,
                           HttpServletRequest request, HttpServletResponse response, Model model,
                           RedirectAttributes flash) {
         response.setHeader("Cache-Control", "no-store");
         Integer userId = currentUserId(request);
         if (userId == null) {
-            return "redirect:/Account/Login";
+            return "redirect:/account/login";
         }
         if (errors.hasErrors()) {
             model.addAttribute("user", accounts.loadProfile(userId)
@@ -271,7 +270,7 @@ public class AccountController {
         }
         request.getSession().setAttribute("UserFullName", form.getFullName().trim());
         flash.addFlashAttribute("successMessage", "Cập nhật thông tin thành công.");
-        return "redirect:/Account/Profile";
+        return "redirect:/account/profile";
     }
 
     private Integer currentUserId(HttpServletRequest request) {
@@ -287,13 +286,13 @@ public class AccountController {
 
     private String verificationSent(String email, RedirectAttributes flash) {
         flash.addAttribute("email", email);
-        return "redirect:/Account/EmailVerificationSent";
+        return "redirect:/account/email-verification-sent";
     }
 
     private BiFunction<Integer, String, String> linkBuilder(HttpServletRequest request, String action) {
         String base = ServletUriComponentsBuilder.fromContextPath(request).build().toUriString();
         return (userId, token) -> org.springframework.web.util.UriComponentsBuilder.fromUriString(base)
-                .path("/Account/" + action).queryParam("userId", userId).queryParam("token", token)
+                .path("/account/" + action).queryParam("userId", userId).queryParam("token", token)
                 .build().encode().toUriString();
     }
 }

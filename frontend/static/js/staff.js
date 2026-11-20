@@ -299,7 +299,7 @@
         }
 
         const currentRequest = ++requestId;
-        const url = new URL('/Staff/GetScreeningRoomState', window.location.origin);
+        const url = new URL('/staff/screening-room-state', window.location.origin);
         url.searchParams.set('roomId', roomId);
         url.searchParams.set('date', getSelectedDateValue());
 

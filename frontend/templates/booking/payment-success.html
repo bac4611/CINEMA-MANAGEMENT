@@ -38,8 +38,8 @@
           <div class="success-amount"><span>Tổng thanh toán</span><strong th:text="${#numbers.formatDecimal(b.totalAmount,0,'POINT',0,'COMMA')} + ' ₫'"></strong></div>
           <span class="success-status" th:text="${b.status}"></span>
           <div class="success-actions">
-            <a th:href="@{/Home/Index}" class="primary-button full">Về trang chủ</a>
-            <a th:href="@{/Account/Profile}" class="secondary-button full">Xem vé của tôi</a>
+            <a th:href="@{/home}" class="primary-button full">Về trang chủ</a>
+            <a th:href="@{/account/profile}" class="secondary-button full">Xem vé của tôi</a>
           </div>
         </aside>
       </div>

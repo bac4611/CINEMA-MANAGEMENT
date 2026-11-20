@@ -18,7 +18,6 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-@RequestMapping({"/Admin", "/admin"})
 public class AdminController {
     private final AdminService admins;
 
@@ -36,21 +35,21 @@ public class AdminController {
         response.setHeader("Cache-Control", "no-store");
     }
 
-    @GetMapping({"", "/", "/Index", "/index"})
+    @GetMapping("/admin")
     public String index(HttpServletRequest request, Model model) {
         Object email = request.getSession().getAttribute("UserEmail");
         model.addAttribute("adminEmail", email == null ? "Admin" : email);
         return "admin/index";
     }
 
-    @GetMapping({"/Analytics", "/analytics"})
+    @GetMapping("/admin/analytics")
     public String analytics(@RequestParam(required = false) String month,
                             @RequestParam(required = false) Integer movieId, Model model) {
         model.addAttribute("analytics", admins.getAnalytics(month, movieId));
         return "admin/analytics";
     }
 
-    @GetMapping({"/Staff", "/staff"})
+    @GetMapping("/admin/staff")
     public String staff(@RequestParam(defaultValue = "1") int page, Model model) {
         populateStaffPage(page, model);
         model.addAttribute("createStaff", new CreateStaffRequest());
@@ -58,16 +57,16 @@ public class AdminController {
         return "admin/staff";
     }
 
-    @GetMapping({"/Settings", "/settings"})
+    @GetMapping("/admin/settings")
     public String settings(HttpServletRequest request, Model model, RedirectAttributes flash) {
         Integer userId = currentUserId(request);
         if (userId == null) {
-            return "redirect:/Account/Login";
+            return "redirect:/account/login";
         }
         var settings = admins.getSettings(userId).orElse(null);
         if (settings == null) {
             flash.addFlashAttribute("errorMessage", "Không tìm thấy tài khoản Admin.");
-            return "redirect:/Admin/Index";
+            return "redirect:/admin";
         }
         AdminSettingsRequest form = new AdminSettingsRequest();
         form.setFullName(settings.fullName());
@@ -77,13 +76,13 @@ public class AdminController {
         return "admin/settings";
     }
 
-    @PostMapping({"/UpdateSettings", "/update-settings"})
+    @PostMapping("/admin/update-settings")
     public String updateSettings(@Valid @ModelAttribute("settings") AdminSettingsRequest form,
                                  BindingResult errors, HttpServletRequest request,
                                  Model model, RedirectAttributes flash) {
         Integer userId = currentUserId(request);
         if (userId == null) {
-            return "redirect:/Account/Login";
+            return "redirect:/account/login";
         }
         if (errors.hasErrors()) {
             model.addAttribute("admin", admins.getSettings(userId)
@@ -99,10 +98,10 @@ public class AdminController {
         }
         request.getSession().setAttribute("UserEmail", form.getEmail().trim().toLowerCase());
         flash.addFlashAttribute("successMessage", result.message());
-        return "redirect:/Admin/Settings";
+        return "redirect:/admin/settings";
     }
 
-    @PostMapping({"/CreateStaff", "/create-staff"})
+    @PostMapping("/admin/create-staff")
     public String createStaff(@Valid @ModelAttribute("createStaff") CreateStaffRequest form,
                               BindingResult errors, @RequestParam(defaultValue = "1") int page,
                               Model model, RedirectAttributes flash) {
@@ -111,7 +110,7 @@ public class AdminController {
             if (result.status() == AdminService.OperationStatus.SUCCESS) {
                 flash.addFlashAttribute("successMessage", result.message());
                 flash.addAttribute("page", page);
-                return "redirect:/Admin/Staff";
+                return "redirect:/admin/staff";
             }
             rejectOperation(errors, result);
         }
@@ -121,7 +120,7 @@ public class AdminController {
         return "admin/staff";
     }
 
-    @PostMapping({"/UpdateStaff", "/update-staff"})
+    @PostMapping("/admin/update-staff")
     public String updateStaff(@Valid @ModelAttribute("updateStaff") UpdateStaffRequest form,
                               BindingResult errors, @RequestParam(defaultValue = "1") int page,
                               Model model, RedirectAttributes flash) {
@@ -130,7 +129,7 @@ public class AdminController {
             if (result.status() == AdminService.OperationStatus.SUCCESS) {
                 flash.addFlashAttribute("successMessage", result.message());
                 flash.addAttribute("page", page);
-                return "redirect:/Admin/Staff";
+                return "redirect:/admin/staff";
             }
             rejectOperation(errors, result);
         }

@@ -37,13 +37,13 @@ class AdminControllerTests {
 
     @Test
     void adminEndpointsRequireAdminRoleAndCsrf() throws Exception {
-        mvc.perform(post("/Admin/CreateStaff").with(user("staff@example.com").roles("Staff")))
+        mvc.perform(post("/admin/create-staff").with(user("staff@example.com").roles("Staff")))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/Admin/CreateStaff").with(user("admin@example.com").roles("Admin")))
+        mvc.perform(post("/admin/create-staff").with(user("admin@example.com").roles("Admin")))
                 .andExpect(status().isForbidden());
 
         when(admins.createStaff(any())).thenReturn(AdminService.OperationResult.success("created"));
-        mvc.perform(post("/Admin/CreateStaff").with(user("admin@example.com").roles("Admin")).with(csrf())
+        mvc.perform(post("/admin/create-staff").with(user("admin@example.com").roles("Admin")).with(csrf())
                         .param("fullName", "Nguyen Van A")
                         .param("email", "staff@example.com")
                         .param("phoneNumber", "0901234567")
@@ -51,7 +51,7 @@ class AdminControllerTests {
                         .param("dateOfBirth", "2000-01-01")
                         .param("page", "2"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/Admin/Staff?page=2"));
+                .andExpect(redirectedUrl("/admin/staff?page=2"));
         verify(admins).createStaff(any());
     }
 
@@ -59,24 +59,24 @@ class AdminControllerTests {
     void updateSettingsUsesAuthenticatedSessionUserAndRefreshesSessionEmail() throws Exception {
         when(admins.updateSettings(eq(1), any(AdminSettingsRequest.class)))
                 .thenReturn(AdminService.OperationResult.success("updated"));
-        mvc.perform(post("/Admin/UpdateSettings")
+        mvc.perform(post("/admin/update-settings")
                         .with(user("admin@example.com").roles("Admin")).with(csrf())
                         .sessionAttr("UserID", 1)
                         .param("fullName", "Admin")
                         .param("email", " NEW@EXAMPLE.COM "))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/Admin/Settings"))
+                .andExpect(redirectedUrl("/admin/settings"))
                 .andExpect(request().sessionAttribute("UserEmail", "new@example.com"));
         verify(admins).updateSettings(eq(1), any(AdminSettingsRequest.class));
     }
 
     @Test
     void settingsWithoutSessionIdentityReturnsToLogin() throws Exception {
-        mvc.perform(post("/Admin/UpdateSettings")
+        mvc.perform(post("/admin/update-settings")
                         .with(user("admin@example.com").roles("Admin")).with(csrf())
                         .param("fullName", "Admin").param("email", "admin@example.com"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/Account/Login"));
+                .andExpect(redirectedUrl("/account/login"));
         verifyNoInteractions(admins);
     }
 }

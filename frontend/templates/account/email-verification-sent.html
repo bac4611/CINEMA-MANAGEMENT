@@ -9,10 +9,10 @@
             <strong th:text="${#strings.isEmpty(email) ? 'email của bạn' : email}">email của bạn</strong>.
             Hãy mở email và xác minh tài khoản.</p>
         <form th:if="${!#strings.isEmpty(email)}" class="auth-state-form"
-              th:action="@{/Account/ResendVerificationEmail}" method="post">
+              th:action="@{/account/resend-verification-email}" method="post">
             <input type="hidden" name="email" th:value="${email}">
             <button type="submit" class="btn btn-submit">Gửi lại email xác minh</button>
         </form>
-        <a class="auth-secondary-link" th:href="@{/Account/Login}">Quay lại đăng nhập</a>
+        <a class="auth-secondary-link" th:href="@{/account/login}">Quay lại đăng nhập</a>
     </div></div></section>
 </main><script></script></body></html>

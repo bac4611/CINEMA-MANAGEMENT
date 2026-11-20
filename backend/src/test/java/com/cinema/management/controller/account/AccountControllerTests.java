@@ -18,6 +18,10 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.net.URI;
+import java.util.function.BiFunction;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -104,10 +108,10 @@ class AccountControllerTests {
 
     @Test
     void mvcFormsRequireCsrfAndProfileRequiresAuthentication() throws Exception {
-        mvc.perform(post("/Account/Logout")).andExpect(status().isForbidden());
-        mvc.perform(post("/Account/Logout").with(csrf()))
-                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/Account/Login"));
-        mvc.perform(get("/Account/Profile"))
+        mvc.perform(post("/account/logout")).andExpect(status().isForbidden());
+        mvc.perform(post("/account/logout").with(csrf()))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/account/login"));
+        mvc.perform(get("/account/profile"))
                 .andExpect(status().is3xxRedirection());
     }
 
@@ -121,11 +125,47 @@ class AccountControllerTests {
         when(accounts.isDevelopmentPasswordlessLogin(user.getEmail())).thenReturn(true);
         when(accounts.authenticate(any(), eq(true)))
                 .thenReturn(new AccountService.LoginResult(AccountService.LoginStatus.SUCCESS, user));
-        mvc.perform(post("/Account/Login").with(csrf())
+        mvc.perform(post("/account/login").with(csrf())
                         .param("email", user.getEmail()).param("password", ""))
-                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/Admin/Index"))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/admin"))
                 .andExpect(request().sessionAttribute("UserID", 42))
                 .andExpect(request().sessionAttribute("UserRole", "Admin"));
+    }
+
+    @Test
+    void forgotPasswordBuildsCanonicalEmailLinkAndRedirectsToConfirmation() throws Exception {
+        doAnswer(invocation -> {
+            BiFunction<Integer, String, String> link = invocation.getArgument(1);
+            assertEquals("http://localhost/account/reset-password?userId=42&token=email-token",
+                    link.apply(42, "email-token"));
+            return null;
+        }).when(accounts).forgotPassword(eq("a@example.com"), any());
+        mvc.perform(post("/account/forgot-password").with(csrf()).param("email", "a@example.com"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/account/forgot-password-confirmation"));
+        verify(accounts).forgotPassword(eq("a@example.com"), any());
+    }
+
+    @Test
+    void webAndApiRegistrationBuildCanonicalVerificationEmailLinks() throws Exception {
+        when(accounts.register(any(), any())).thenAnswer(invocation -> {
+            BiFunction<Integer, String, String> link = invocation.getArgument(1);
+            assertEquals("/account/confirm-email", URI.create(link.apply(42, "email-token")).getPath());
+            assertEquals("userId=42&token=email-token", URI.create(link.apply(42, "email-token")).getQuery());
+            return new AccountService.RegistrationResult(AccountService.RegistrationStatus.CREATED, "a@example.com");
+        });
+        mvc.perform(post("/account/register").with(csrf()).param("email", "a@example.com")
+                        .param("fullName", "Nguyen Van A").param("phoneNumber", "0901234567")
+                        .param("dateOfBirth", "2000-01-01").param("password", "Password1!")
+                        .param("confirmPassword", "Password1!"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/account/email-verification-sent?email=a%40example.com"));
+        mvc.perform(post("/api/account/register").contentType("application/json").content("""
+                {"email":"a@example.com","fullName":"Nguyen Van A","phoneNumber":"0901234567",
+                 "dateOfBirth":"2000-01-01","password":"Password1!","confirmPassword":"Password1!"}
+                """))
+                .andExpect(status().isCreated());
+        verify(accounts, times(2)).register(any(), any());
     }
 
     private String token(String role, String audience, int expiresInSeconds) {

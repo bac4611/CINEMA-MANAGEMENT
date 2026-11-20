@@ -26,7 +26,7 @@ class GoogleAuthControllerTests {
 
         String view = controller.login(null, new MockHttpServletRequest(), new RedirectAttributesModelMap());
 
-        assertEquals("redirect:/Account/Login", view);
+        assertEquals("redirect:/account/login", view);
     }
 
     @Test
@@ -39,11 +39,11 @@ class GoogleAuthControllerTests {
         when(principal.getAttributes()).thenReturn(Map.of("sub", "1"));
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
-        controller.login("/Booking/Checkout", request, new RedirectAttributesModelMap());
+        controller.login("/booking/checkout", request, new RedirectAttributesModelMap());
 
         String view = controller.callback(null, principal, request, response, new RedirectAttributesModelMap());
 
-        assertEquals("redirect:/Booking/Checkout", view);
+        assertEquals("redirect:/booking/checkout", view);
         verify(signIn).signIn(request, response, user, true);
     }
 
@@ -61,7 +61,7 @@ class GoogleAuthControllerTests {
 
         String view = controller.callback(null, principal, request, response, new RedirectAttributesModelMap());
 
-        assertEquals("redirect:/Admin/Index", view);
+        assertEquals("redirect:/admin", view);
     }
 
     @Test
@@ -74,7 +74,7 @@ class GoogleAuthControllerTests {
         String view = controller.callback(null, principal, new MockHttpServletRequest(),
                 new MockHttpServletResponse(), new RedirectAttributesModelMap());
 
-        assertEquals("redirect:/Account/Login", view);
+        assertEquals("redirect:/account/login", view);
         verifyNoInteractions(signIn);
     }
 

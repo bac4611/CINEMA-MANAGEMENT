@@ -33,11 +33,11 @@ class GoogleAuthSecurityTests {
 
     @Test
     void loginEndpointIsPublicButStillRequiresCsrf() throws Exception {
-        mvc.perform(post("/GoogleAuth/Login"))
+        mvc.perform(post("/google-auth/login"))
                 .andExpect(status().isForbidden());
         when(google.isEnabled()).thenReturn(false);
-        mvc.perform(post("/GoogleAuth/Login").with(csrf()))
+        mvc.perform(post("/google-auth/login").with(csrf()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/Account/Login"));
+                .andExpect(redirectedUrl("/account/login"));
     }
 }

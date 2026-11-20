@@ -30,7 +30,7 @@ public class GoogleAuthController {
                         HttpServletRequest request, RedirectAttributes flash) {
         if (!google.isEnabled()) {
             flash.addFlashAttribute("alertError", "Đăng nhập Google chưa được cấu hình.");
-            return "redirect:/Account/Login";
+            return "redirect:/account/login";
         }
         var session = request.getSession(true);
         if (isLocalUrl(returnUrl)) session.setAttribute(RETURN_URL, returnUrl);
@@ -46,18 +46,18 @@ public class GoogleAuthController {
         if (remoteError != null && !remoteError.isBlank()) {
             clearTemporaryAuthentication(request, response);
             flash.addFlashAttribute("alertError", "Đăng nhập Google thất bại. Vui lòng thử lại.");
-            return "redirect:/Account/Login";
+            return "redirect:/account/login";
         }
         if (principal == null) {
             clearTemporaryAuthentication(request, response);
             flash.addFlashAttribute("alertError", "Không đọc được thông tin đăng nhập Google.");
-            return "redirect:/Account/Login";
+            return "redirect:/account/login";
         }
         var result = google.authenticate(principal.getAttributes());
         if (result.status() != GoogleAuthService.Status.SUCCESS || result.user() == null) {
             clearTemporaryAuthentication(request, response);
             flash.addFlashAttribute("alertError", result.message());
-            return "redirect:/Account/Login";
+            return "redirect:/account/login";
         }
         User user = result.user();
         String returnUrl = sessionValue(request, RETURN_URL);
@@ -66,9 +66,9 @@ public class GoogleAuthController {
         flash.addFlashAttribute("alertSuccess", "Đăng nhập Google thành công. Xin chào " + user.getFullName() + ".");
         if (isLocalUrl(returnUrl)) return "redirect:" + returnUrl;
         return switch (user.getRole()) {
-            case "Admin" -> "redirect:/Admin/Index";
-            case "Staff" -> "redirect:/Staff/Index";
-            default -> "redirect:/Home/Index";
+            case "Admin" -> "redirect:/admin";
+            case "Staff" -> "redirect:/staff";
+            default -> "redirect:/home";
         };
     }
 

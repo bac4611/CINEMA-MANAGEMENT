@@ -29,12 +29,12 @@ Các bài toán kỹ thuật được xử lý trong mã nguồn gồm:
 
 | Trang | Đường dẫn |
 | --- | --- |
-| Trang chủ | [bacdz.shop/Home](https://bacdz.shop/Home) |
-| Danh sách phim | [bacdz.shop/Home/Movie](https://bacdz.shop/Home/Movie) |
-| Lịch chiếu và đặt vé | [bacdz.shop/Booking/Index](https://bacdz.shop/Booking/Index) |
-| Bảng giá vé | [bacdz.shop/Home/TicketPricing](https://bacdz.shop/Home/TicketPricing) |
-| Đăng nhập | [bacdz.shop/Account/Login](https://bacdz.shop/Account/Login) |
-| Đăng ký | [bacdz.shop/Account/Register](https://bacdz.shop/Account/Register) |
+| Trang chủ | [bacdz.shop/home](https://bacdz.shop/home) |
+| Danh sách phim | [bacdz.shop/movies](https://bacdz.shop/movies) |
+| Lịch chiếu và đặt vé | [bacdz.shop/booking](https://bacdz.shop/booking) |
+| Bảng giá vé | [bacdz.shop/ticket-pricing](https://bacdz.shop/ticket-pricing) |
+| Đăng nhập | [bacdz.shop/account/login](https://bacdz.shop/account/login) |
+| Đăng ký | [bacdz.shop/account/register](https://bacdz.shop/account/register) |
 
 Có thể bắt đầu bằng việc duyệt phim, xem chi tiết, chọn suất chiếu và trải nghiệm
 sơ đồ ghế. Các bước đặt vé yêu cầu tài khoản theo luồng của ứng dụng. Khu vực
@@ -223,21 +223,21 @@ CINEMA-java/
 
 | Phương thức | Endpoint | Mục đích |
 | --- | --- | --- |
-| GET | `/Home`, `/Home/Movie`, `/Home/Details?id=…` | Khám phá phim |
+| GET | `/home`, `/movies`, `/movies/details?id=…` | Khám phá phim |
 | POST | `/api/account/register` | Đăng ký tài khoản |
 | POST | `/api/account/login` | Đăng nhập API, nhận JWT |
 | GET | `/api/account/me` | Thông tin từ JWT; yêu cầu Bearer token hợp lệ |
-| POST | `/GoogleAuth/Login` | Bắt đầu đăng nhập Google từ web |
+| POST | `/google-auth/login` | Bắt đầu đăng nhập Google từ web |
 | GET | `/login/oauth2/code/google` | Nhận kết quả OAuth từ Google |
-| GET | `/Booking/Index` | Lịch chiếu và bắt đầu đặt vé |
-| POST | `/Booking/HoldSeat` | Chọn/bỏ ghế trong phiên giữ chỗ |
-| POST | `/Booking/UpdateComboHold` | Thay đổi số lượng combo |
-| POST | `/Booking/StartPayment` | Tạo hoặc lấy yêu cầu thanh toán đang hiệu lực |
-| GET | `/Booking/PaymentStatus` | Tra cứu trạng thái thanh toán theo quyền sở hữu |
+| GET | `/booking` | Lịch chiếu và bắt đầu đặt vé |
+| POST | `/booking/hold-seat` | Chọn/bỏ ghế trong phiên giữ chỗ |
+| POST | `/booking/update-combo-hold` | Thay đổi số lượng combo |
+| POST | `/booking/start-payment` | Tạo hoặc lấy yêu cầu thanh toán đang hiệu lực |
+| GET | `/booking/payment-status` | Tra cứu trạng thái thanh toán theo quyền sở hữu |
 | POST | `/webhooks/sepay` | Nhận thông báo giao dịch ngân hàng |
 | POST | `/api/chatbot/recommend` | Gợi ý phim theo bốn tiêu chí |
-| POST | `/Staff/SaveSchedule` | Lưu lịch chiếu; yêu cầu Staff/Admin |
-| GET | `/Admin/Analytics` | Thống kê kinh doanh; yêu cầu Admin |
+| POST | `/staff/save-schedule` | Lưu lịch chiếu; yêu cầu Staff/Admin |
+| GET | `/admin/analytics` | Thống kê kinh doanh; yêu cầu Admin |
 
 Các thao tác web POST được bảo vệ CSRF theo cấu hình Spring Security. API JWT
 và webhook dùng chuỗi xác thực riêng; endpoint công khai không đồng nghĩa với
@@ -257,7 +257,7 @@ Từ thư mục gốc, chạy:
 .\mvnw.cmd -pl backend spring-boot:run
 ```
 
-Mở [http://localhost:8080/Home](http://localhost:8080/Home).
+Mở [http://localhost:8080/home](http://localhost:8080/home).
 Để dùng API phát hành JWT, cấp `JWT_KEY` đủ ít nhất 32 byte qua biến môi trường.
 Schema không được Hibernate tự tạo hoặc chỉnh sửa ở cấu hình chạy mặc định;
 xem script SQL trong `database/` trước khi chuẩn bị database mới.

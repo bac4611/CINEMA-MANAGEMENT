@@ -23,7 +23,7 @@ class BookingControllerTests {
         String view = controller.selectShowtime(7, new MockHttpServletRequest(),
                 new org.springframework.ui.ConcurrentModel(), new RedirectAttributesModelMap());
 
-        assertEquals("redirect:/Account/Login", view);
+        assertEquals("redirect:/account/login", view);
         verifyNoInteractions(bookings);
     }
 

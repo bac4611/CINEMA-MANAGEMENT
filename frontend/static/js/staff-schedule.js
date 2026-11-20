@@ -70,7 +70,7 @@
         saveButton.disabled = true;
         notice.hidden = true;
         try {
-            const response = await fetch(`/Staff/GetSchedule?date=${encodeURIComponent(dateInput.value)}`);
+            const response = await fetch(`/staff/schedule?date=${encodeURIComponent(dateInput.value)}`);
             if (!response.ok) throw new Error();
             const items = await response.json();
             if (version !== loadVersion) return false;
@@ -177,7 +177,7 @@
         if (csrf() && csrfHeader()) headers[csrfHeader()] = csrf();
         const items = scheduleItems.map(item => ({ showtimeId: Number(item.showtimeId || 0), movieId: Number(item.movieId), roomId: Number(item.roomId), startTime: item.startTime, endTime: item.endTime || '' }));
         try {
-            const response = await fetch('/Staff/SaveSchedule', { method: 'POST', headers, body: JSON.stringify({ date: dateInput.value, items }) });
+            const response = await fetch('/staff/save-schedule', { method: 'POST', headers, body: JSON.stringify({ date: dateInput.value, items }) });
             const result = await response.json().catch(() => ({}));
             if (response.redirected || response.status === 401 || response.status === 403)
                 throw new Error('Phiên đăng nhập đã hết hạn hoặc không có quyền. Vui lòng đăng nhập lại.');

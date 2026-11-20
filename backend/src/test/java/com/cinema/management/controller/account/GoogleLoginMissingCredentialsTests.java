@@ -23,13 +23,13 @@ class GoogleLoginMissingCredentialsTests {
     @Test
     void missingCredentialsKeepLoginAndRegisterAvailableWithoutGoogle() throws Exception {
         var mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
-        for (String path : new String[]{"/Account/Login", "/Account/Register"}) {
+        for (String path : new String[]{"/account/login", "/account/register"}) {
             mvc.perform(get(path))
                     .andExpect(status().isOk())
-                    .andExpect(content().string(not(containsString("action=\"/GoogleAuth/Login\""))));
+                    .andExpect(content().string(not(containsString("action=\"/google-auth/login\""))));
         }
-        mvc.perform(post("/GoogleAuth/Login").with(csrf()))
+        mvc.perform(post("/google-auth/login").with(csrf()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/Account/Login"));
+                .andExpect(redirectedUrl("/account/login"));
     }
 }

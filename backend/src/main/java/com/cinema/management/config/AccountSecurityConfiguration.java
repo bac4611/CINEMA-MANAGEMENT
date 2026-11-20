@@ -57,26 +57,29 @@ public class AccountSecurityConfiguration {
                                 "/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/Account/Profile", "/Account/profile", "/account/Profile", "/account/profile")
                         .authenticated()
-                        .requestMatchers("/Admin/**", "/admin/**").hasRole("Admin")
-                        .requestMatchers("/Staff/**", "/staff/**").hasAnyRole("Staff", "Admin")
+                        .requestMatchers("/admin", "/admin/**", "/Admin", "/Admin/**").hasRole("Admin")
+                        .requestMatchers("/staff", "/staff/**", "/Staff", "/Staff/**").hasAnyRole("Staff", "Admin")
                         .requestMatchers(
-                                "/Home/AddReview", "/home/AddReview",
+                                "/movies/add-review", "/Home/AddReview", "/home/AddReview",
                                 "/Home/add-review", "/home/add-review")
                         .hasRole("KhachHang")
                         .requestMatchers(
                                 "/Booking/CompleteDevPayment", "/booking/CompleteDevPayment",
                                 "/Booking/complete-dev-payment", "/booking/complete-dev-payment",
                                 "/Booking/PaymentStatus", "/booking/PaymentStatus",
+                                "/Booking/payment-status", "/booking/payment-status",
                                 "/Booking/CancelBooking", "/booking/CancelBooking",
-                                "/Booking/PaymentSuccess", "/booking/PaymentSuccess")
+                                "/Booking/cancel-booking", "/booking/cancel-booking",
+                                "/Booking/PaymentSuccess", "/booking/PaymentSuccess",
+                                "/Booking/payment-success", "/booking/payment-success")
                         .hasRole("KhachHang")
                         .anyRequest().permitAll())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .exceptionHandling(errors -> errors
-                        .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/Account/Login"))
-                        .accessDeniedPage("/Account/AccessDenied"));
+                        .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/account/login"))
+                        .accessDeniedPage("/account/access-denied"));
         if (registrations.getIfAvailable() != null) {
             http.oauth2Login(oauth -> oauth
                     .defaultSuccessUrl("/GoogleAuth/Callback", true)

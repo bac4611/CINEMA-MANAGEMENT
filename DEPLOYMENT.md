@@ -65,7 +65,7 @@ chmod 600 .env
 docker compose --env-file .env -f compose.prod.yml config --quiet
 docker compose --env-file .env -f compose.prod.yml up -d --wait --wait-timeout 180 cinema
 docker compose --env-file .env -f compose.prod.yml ps
-curl --fail http://127.0.0.1:8080/Account/Login
+curl --fail http://127.0.0.1:8080/account/login
 docker compose --env-file .env -f compose.prod.yml exec cinema \
   wget -q -O - http://127.0.0.1:8081/actuator/health
 ```
@@ -203,7 +203,7 @@ export CINEMA_IMAGE_TAG=$(cat .deployed-tag)
 docker compose --env-file .env -f compose.prod.yml ps
 docker compose --env-file .env -f compose.prod.yml logs --tail 100 -f cinema
 docker logs --tail 100 "$(docker compose --env-file .env -f compose.prod.yml ps -q cinema)"
-curl --fail --silent --show-error -o /dev/null http://127.0.0.1:8080/Account/Login
+curl --fail --silent --show-error -o /dev/null http://127.0.0.1:8080/account/login
 docker compose --env-file .env -f compose.prod.yml exec -T cinema \
   wget -q -O - http://127.0.0.1:8081/actuator/health/readiness
 

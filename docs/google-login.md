@@ -14,7 +14,7 @@ cấu hình OAuth để bật luồng này. Không dùng Client ID hoặc Client
    `http://localhost:8080/login/oauth2/code/google`.
 6. Lấy Client ID và Client Secret. Không gửi secret lên Git hoặc dán vào chat.
 
-`/GoogleAuth/Callback` là bước xử lý nội bộ sau OAuth, không phải redirect URI
+`/google-auth/callback` là bước xử lý nội bộ sau OAuth, không phải redirect URI
 đăng ký trên Google. Khi đổi domain hoặc port, phải đăng ký URI tương ứng.
 
 ## Chạy bằng VS Code
@@ -23,7 +23,7 @@ cấu hình OAuth để bật luồng này. Không dùng Client ID hoặc Client
 2. Điền `GOOGLE_CLIENT_ID` và `GOOGLE_CLIENT_SECRET` trong `.env`.
 3. Dừng backend cũ nếu đang chiếm port 8080.
 4. Chọn Run and Debug > Spring Boot-CinemaApplication (Google Login), rồi F5.
-5. Vào http://localhost:8080/Account/Login và bấm Đăng nhập với Google.
+5. Vào http://localhost:8080/account/login và bấm Đăng nhập với Google.
 
 File `.env` được Git bỏ qua. Cấu hình chạy cũ vẫn dùng profile `dev`.
 
@@ -46,9 +46,9 @@ SQL Server vẫn dùng cấu hình Windows Authentication hiện tại.
 
 ## Luồng đăng nhập
 
-`/Account/Login` → POST `/GoogleAuth/Login` (có CSRF) →
+`/account/login` → POST `/google-auth/login` (có CSRF) →
 `/oauth2/authorization/google` → Google → `/login/oauth2/code/google` →
-`/GoogleAuth/Callback` → trang tương ứng với role.
+`/google-auth/callback` → trang tương ứng với role.
 
 ## Lỗi thường gặp
 

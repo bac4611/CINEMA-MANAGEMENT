@@ -13,7 +13,6 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-@RequestMapping({"/Home", "/home"})
 public class HomeController {
     private final HomeService home;
 
@@ -21,13 +20,13 @@ public class HomeController {
         this.home = home;
     }
 
-    @GetMapping({"", "/", "/Index", "/index"})
+    @GetMapping("/home")
     public String index(Model model) {
         model.addAttribute("movies", home.getHomeMovies());
         return "home/index";
     }
 
-    @GetMapping({"/Movie", "/movie"})
+    @GetMapping("/movies")
     public String movie(Model model) {
         var catalog = home.getMovieCatalog();
         model.addAttribute("movies", catalog.featured());
@@ -36,12 +35,12 @@ public class HomeController {
         return "home/movie";
     }
 
-    @GetMapping({"/Details/{id}", "/details/{id}"})
+    @GetMapping("/movies/details/{id}")
     public String detailsPath(@PathVariable int id, HttpServletRequest request, Model model) {
         return details(id, request, model);
     }
 
-    @GetMapping({"/Details", "/details"})
+    @GetMapping("/movies/details")
     public String details(@RequestParam int id, HttpServletRequest request, Model model) {
         var movie = home.getMovieDetails(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -53,7 +52,7 @@ public class HomeController {
         return "home/details";
     }
 
-    @PostMapping({"/AddReview", "/add-review"})
+    @PostMapping({"/movies/add-review", "/Home/AddReview", "/Home/add-review", "/home/AddReview", "/home/add-review"})
     public String addReview(@Valid @ModelAttribute("reviewForm") MovieReviewFormViewModel form,
                             BindingResult errors, HttpServletRequest request,
                             RedirectAttributes flash) {
@@ -75,7 +74,7 @@ public class HomeController {
         return detailsRedirect(result.movieId());
     }
 
-    @GetMapping({"/TicketPricing", "/ticket-pricing"})
+    @GetMapping("/ticket-pricing")
     public String ticketPricing(Model model) {
         model.addAttribute("ticketPricing", home.getTicketPricing());
         return "home/ticket-pricing";
@@ -87,6 +86,6 @@ public class HomeController {
     }
 
     private String detailsRedirect(int movieId) {
-        return "redirect:/Home/Details?id=" + movieId;
+        return "redirect:/movies/details?id=" + movieId;
     }
 }

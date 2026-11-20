@@ -29,7 +29,7 @@ public class AccountApiController {
                 .build().toUriString();
         var result = accounts.register(request.toViewModel(), (userId, token) ->
                 org.springframework.web.util.UriComponentsBuilder.fromUriString(baseUrl)
-                        .path("/Account/ConfirmEmail")
+                        .path("/account/confirm-email")
                         .queryParam("userId", userId)
                         .queryParam("token", token)
                         .build().encode().toUriString());

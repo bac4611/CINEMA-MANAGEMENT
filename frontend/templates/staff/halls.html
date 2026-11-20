@@ -9,7 +9,7 @@
             <h2>SCREENING ROOMS</h2>
             <span class="badge badge-outline"><i class="status-dot"></i> DATABASE CONNECTED</span>
         </div>
-        <a class="btn-secondary" th:href="@{/Staff/Index}" style="text-decoration:none">SCHEDULE</a>
+        <a class="btn-secondary" th:href="@{/staff}" style="text-decoration:none">SCHEDULE</a>
     </header>
 
     <div class="halls-layout" th:if="${#lists.isEmpty(halls.rooms)}">

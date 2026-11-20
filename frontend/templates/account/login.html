@@ -9,13 +9,13 @@
 
         <div class="auth-info-panel" th:if="${unconfirmedEmail != null}">
             <p>Email này chưa được xác minh. Hãy gửi lại email xác minh nếu bạn chưa nhận được.</p>
-            <form th:action="@{/Account/ResendVerificationEmail}" method="post">
+            <form th:action="@{/account/resend-verification-email}" method="post">
                 <input type="hidden" name="email" th:value="${unconfirmedEmail}">
                 <button type="submit" class="auth-inline-button">Gửi lại email xác minh</button>
             </form>
         </div>
 
-        <form class="auth-form" th:action="@{/Account/Login}" th:object="${login}" method="post">
+        <form class="auth-form" th:action="@{/account/login}" th:object="${login}" method="post">
             <div class="auth-validation-summary" th:if="${#fields.hasGlobalErrors()}">
                 <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Đăng nhập thất bại</p>
             </div>
@@ -28,7 +28,7 @@
                 <span class="auth-field-error" th:errors="*{email}"></span>
             </div>
             <div class="auth-field"><div class="auth-label-row"><label for="passwordInput" class="auth-label">Mật khẩu</label>
-                <a th:href="@{/Account/ForgotPassword}" class="forgot-link">Quên mật khẩu?</a></div>
+                <a th:href="@{/account/forgot-password}" class="forgot-link">Quên mật khẩu?</a></div>
                 <div class="auth-input-frame"><span class="auth-input-icon" aria-hidden="true">●</span>
                     <input id="passwordInput" th:field="*{password}" type="password" class="form-control auth-input"
                            autocomplete="current-password">
@@ -46,7 +46,7 @@
 
         <th:block th:if="${googleLoginEnabled}">
             <div class="auth-divider"><span>hoặc</span></div>
-            <form th:action="@{/GoogleAuth/Login}" method="post">
+            <form th:action="@{/google-auth/login}" method="post">
                 <input type="hidden" name="returnUrl" th:value="${param.ReturnUrl != null ? param.ReturnUrl[0] : ''}">
                 <button type="submit" class="btn-google">
                     <img class="btn-google-logo" th:src="@{/images/common/google.svg}" alt="" width="20" height="20" aria-hidden="true">
@@ -54,6 +54,6 @@
                 </button>
             </form>
         </th:block>
-        <p class="auth-switch-copy">Chưa có tài khoản? <a th:href="@{/Account/Register}">Tạo tài khoản mới</a></p>
+        <p class="auth-switch-copy">Chưa có tài khoản? <a th:href="@{/account/register}">Tạo tài khoản mới</a></p>
     </div></div></section>
 </main><script th:src="@{/js/auth.js}"></script></body></html>
