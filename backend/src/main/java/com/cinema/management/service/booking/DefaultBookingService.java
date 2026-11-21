@@ -226,6 +226,16 @@ public class DefaultBookingService implements BookingService {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<BookingViewModel> getSeatSelectionView(UUID holdId) {
+        BookingHold hold = holdId == null ? null : holds.findSeatSelectionById(holdId).orElse(null);
+        if (!isMutable(hold) || hold.getShowtime() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(buildBookingView(hold, false));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<BookingViewModel> getBookingView(UUID holdId, boolean requireSeats) {
         BookingHold hold = holdId == null ? null : holds.findDetailsById(holdId).orElse(null);
         if (!isMutable(hold) || hold.getShowtime() == null) {
@@ -626,18 +636,19 @@ public class DefaultBookingService implements BookingService {
     }
 
     private BookingViewModel buildBookingView(BookingHold hold) {
+        return buildBookingView(hold, true);
+    }
+
+    private BookingViewModel buildBookingView(BookingHold hold, boolean includeConcessions) {
         Showtime showtime = hold.getShowtime();
         List<Seat> roomSeats = seats.findByRoomRoomIdOrderBySeatCode(showtime.getRoom().getRoomId());
         Set<Integer> occupied = new HashSet<>(seatHolds.findActiveHeldSeatIds(showtime.getShowtimeId()));
         occupied.removeAll(hold.getSeatHolds().stream().map(BookingSeatHold::getSeatId).toList());
-        tickets.findAll().stream().filter(item -> item.getShowtime().getShowtimeId().equals(showtime.getShowtimeId()))
-                .map(item -> item.getSeat().getSeatId()).forEach(occupied::add);
+        occupied.addAll(tickets.findSoldSeatIds(showtime.getShowtimeId()));
         Map<String, BigDecimal> multipliers = new HashMap<>();
         pricing.findAll().forEach(item -> multipliers.put(item.getSeatType(), item.getMultiplier()));
         Map<Integer, BookingSeatHold> ownSeats = new HashMap<>();
         hold.getSeatHolds().forEach(item -> ownSeats.put(item.getSeatId(), item));
-        Map<Integer, BookingComboHold> ownCombos = new HashMap<>();
-        hold.getComboHolds().forEach(item -> ownCombos.put(item.getComboId(), item));
         BookingViewModel model = new BookingViewModel();
         model.setMovieId(hold.getMovie().getMovieId()); model.setMovieTitle(hold.getMovie().getTitle());
         model.setShowtimeId(showtime.getShowtimeId()); model.setSelectedDate(showtime.getDate().toString());
@@ -657,6 +668,11 @@ public class DefaultBookingService implements BookingService {
                     : showtime.getBasePrice().multiply(multipliers.getOrDefault(seat.getSeatType(), BigDecimal.ONE)));
             return choice;
         }).toList());
+        if (!includeConcessions) {
+            return model;
+        }
+        Map<Integer, BookingComboHold> ownCombos = new HashMap<>();
+        hold.getComboHolds().forEach(item -> ownCombos.put(item.getComboId(), item));
         model.setConcessions(combos.findAll().stream().sorted(Comparator.comparing(Combo::getComboName)).map(combo -> {
             BookingComboHold own = ownCombos.get(combo.getComboId());
             ConcessionItemViewModel item = new ConcessionItemViewModel(); item.setId(combo.getComboId());

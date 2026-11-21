@@ -17,6 +17,7 @@ public interface BookingService {
     ShowtimePageResult prepareShowtime(int userId, int movieId, UUID currentHoldId);
     ShowtimeSelectionResult selectShowtime(int userId, UUID currentHoldId,
                                            SelectShowtimeRequest request, boolean requireFutureShowtime);
+    Optional<BookingViewModel> getSeatSelectionView(UUID holdId);
     Optional<BookingViewModel> getBookingView(UUID holdId, boolean requireSeats);
     ValidationResult validateSelectedSeats(UUID holdId);
     SeatHoldResult updateSeat(UUID holdId, int seatId, boolean select);

@@ -77,7 +77,7 @@ public class BookingController {
     @GetMapping("/booking/select-seats")
     public String selectSeats(HttpServletRequest request, Model model, RedirectAttributes flash) {
         UUID holdId = currentHoldId(request);
-        var booking = bookings.getBookingView(holdId, false).orElse(null);
+        var booking = bookings.getSeatSelectionView(holdId).orElse(null);
         if (booking == null) {
             flash.addFlashAttribute("alertError", "Phiên giữ chỗ không tồn tại hoặc đã hết hạn.");
             return "redirect:/booking";
