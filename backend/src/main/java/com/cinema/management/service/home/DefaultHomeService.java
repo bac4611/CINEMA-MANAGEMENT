@@ -5,6 +5,7 @@ import com.cinema.management.model.viewmodel.home.*;
 import com.cinema.management.model.viewmodel.booking.ShowtimeChoiceViewModel;
 import com.cinema.management.repository.account.UserRepository;
 import com.cinema.management.repository.movie.*;
+import com.cinema.management.repository.movie.projection.*;
 import com.cinema.management.repository.theater.ShowtimeRepository;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,8 @@ import java.util.stream.Collectors;
 public class DefaultHomeService implements HomeService {
     private static final String VISIBLE = "Visible";
     private static final String FORMAT_MARKER = "\n[COSMOS_FORMATS:";
+    // Keep IN lists comfortably below SQL Server's 2,100 parameter limit.
+    private static final int CATALOG_BATCH_SIZE = 1000;
 
     private final MovieRepository movies;
     private final MovieGenreRepository movieGenres;
@@ -47,38 +50,67 @@ public class DefaultHomeService implements HomeService {
     @Override
     @Transactional(readOnly = true)
     public List<MovieViewModel> getHomeMovies() {
-        List<MovieViewModel> result = movies.findAll().stream().map(this::mapMovie).toList();
-        applyReviewSummaries(result);
-        return result;
+        return loadMovieCards();
     }
 
     @Override
     @Transactional(readOnly = true)
     public MovieCatalog getMovieCatalog() {
         LocalDate today = LocalDate.now();
-        List<Movie> all = new ArrayList<>(movies.findAll());
-        List<Movie> shuffled = new ArrayList<>(all);
+        List<MovieViewModel> all = loadMovieCards();
+        List<MovieViewModel> shuffled = new ArrayList<>(all);
         Collections.shuffle(shuffled);
 
-        List<MovieViewModel> featured = shuffled.stream().limit(4).map(this::mapMovie).toList();
+        List<MovieViewModel> featured = shuffled.stream().limit(4).toList();
         List<MovieViewModel> nowShowing = all.stream()
                 .filter(movie -> movie.getReleaseDate() != null && !movie.getReleaseDate().isAfter(today))
-                .sorted(Comparator.comparing(Movie::getTitle, String.CASE_INSENSITIVE_ORDER))
-                .map(this::mapMovie).toList();
+                .sorted(Comparator.comparing(MovieViewModel::getTitle, String.CASE_INSENSITIVE_ORDER))
+                .toList();
         List<MovieViewModel> comingSoon = all.stream()
                 .filter(movie -> movie.getReleaseDate() != null && movie.getReleaseDate().isAfter(today))
-                .sorted(Comparator.comparing(Movie::getReleaseDate)
-                        .thenComparing(Movie::getTitle, String.CASE_INSENSITIVE_ORDER))
-                .map(this::mapMovie).toList();
+                .sorted(Comparator.comparing(MovieViewModel::getReleaseDate)
+                        .thenComparing(MovieViewModel::getTitle, String.CASE_INSENSITIVE_ORDER))
+                .toList();
 
-        applyReviewSummaries(featured);
-        applyReviewSummaries(nowShowing);
-        applyReviewSummaries(comingSoon);
         return new MovieCatalog(featured,
                 nowShowing.isEmpty() ? featured.stream()
                         .sorted(Comparator.comparing(MovieViewModel::getTitle, String.CASE_INSENSITIVE_ORDER)).toList()
                         : nowShowing,
                 comingSoon);
+    }
+
+    private List<MovieViewModel> loadMovieCards() {
+        List<MovieCardData> cards = movies.findAllCardData();
+        if (cards.isEmpty()) return List.of();
+        List<Integer> ids = cards.stream().map(MovieCardData::movieId).toList();
+        Map<Integer, List<String>> genresByMovie = new HashMap<>();
+        Map<Integer, MovieRatingTotals> ratingsByMovie = new HashMap<>();
+        for (int offset = 0; offset < ids.size(); offset += CATALOG_BATCH_SIZE) {
+            List<Integer> batch = ids.subList(offset, Math.min(offset + CATALOG_BATCH_SIZE, ids.size()));
+            movieGenres.findNamesByMovieIds(batch).forEach(genre -> genresByMovie
+                    .computeIfAbsent(genre.movieId(), ignored -> new ArrayList<>()).add(genre.name()));
+            reviews.findRatingTotalsByMovieIds(batch, VISIBLE)
+                    .forEach(rating -> ratingsByMovie.put(rating.movieId(), rating));
+        }
+        return cards.stream().map(card -> {
+            MovieViewModel model = new MovieViewModel();
+            model.setMovieId(card.movieId());
+            model.setTitle(card.title());
+            model.setDuration(card.duration());
+            model.setPosterUrl(card.posterUrl());
+            model.setSynopsis(card.synopsis());
+            model.setReleaseDate(card.releaseDate());
+            model.setAgeRating(card.ageRating());
+            model.setTrailer(cleanTrailer(card.trailer()));
+            model.setAvailableFormats(extractFormats(card.trailer()));
+            model.setGenre(String.join(", ", genresByMovie.getOrDefault(card.movieId(), List.of())));
+            MovieRatingTotals rating = ratingsByMovie.get(card.movieId());
+            int count = rating == null ? 0 : Math.toIntExact(rating.ratingCount());
+            BigDecimal average = count == 0 ? BigDecimal.ZERO : rating.totalRating()
+                    .divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP);
+            applyReviewSummary(model, average, count);
+            return model;
+        }).toList();
     }
 
     @Override
@@ -234,13 +266,17 @@ public class DefaultHomeService implements HomeService {
             BigDecimal average = ratings.isEmpty() ? BigDecimal.ZERO : ratings.stream()
                     .map(Review::getRating).reduce(BigDecimal.ZERO, BigDecimal::add)
                     .divide(BigDecimal.valueOf(ratings.size()), 2, RoundingMode.HALF_UP);
-            MovieReviewSummaryViewModel summary = new MovieReviewSummaryViewModel();
-            summary.setAverageRating(average);
-            summary.setTotalRatings(ratings.size());
-            movie.setAverageRating(average);
-            movie.setReviewCount(ratings.size());
-            movie.setReviewSummary(summary);
+            applyReviewSummary(movie, average, ratings.size());
         });
+    }
+
+    private void applyReviewSummary(MovieViewModel movie, BigDecimal average, int count) {
+        MovieReviewSummaryViewModel summary = new MovieReviewSummaryViewModel();
+        summary.setAverageRating(average);
+        summary.setTotalRatings(count);
+        movie.setAverageRating(average);
+        movie.setReviewCount(count);
+        movie.setReviewSummary(summary);
     }
 
     private String cleanTrailer(String stored) {

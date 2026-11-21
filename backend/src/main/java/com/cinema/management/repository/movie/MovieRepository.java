@@ -1,6 +1,7 @@
 package com.cinema.management.repository.movie;
 
 import com.cinema.management.model.entity.movie.Movie;
+import com.cinema.management.repository.movie.projection.MovieCardData;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
@@ -9,6 +10,14 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MovieRepository extends JpaRepository<Movie, Integer> {
+    @Query("""
+            select new com.cinema.management.repository.movie.projection.MovieCardData(
+                m.movieId, m.title, m.duration, m.posterUrl, m.synopsis,
+                m.releaseDate, m.ageRating, m.trailer)
+            from Movie m
+            """)
+    List<MovieCardData> findAllCardData();
+
     @Query(value = """
             SELECT (SELECT COUNT(*) FROM PaymentIntents WHERE MovieID = :movieId)
                  + (SELECT COUNT(*) FROM BookingHolds WHERE MovieID = :movieId)
