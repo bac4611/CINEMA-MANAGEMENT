@@ -1,6 +1,7 @@
 package com.cinema.management.repository.theater;
 
 import com.cinema.management.model.entity.theater.Showtime;
+import com.cinema.management.repository.theater.projection.MovieShowtimeData;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -10,6 +11,18 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ShowtimeRepository extends JpaRepository<Showtime, Integer> {
+    @Query("""
+            select new com.cinema.management.repository.theater.projection.MovieShowtimeData(
+                s.showtimeId, s.date, s.startTime, r.roomName)
+            from Showtime s left join s.room r
+            where s.movie.movieId = :movieId
+              and s.date >= :fromDate and s.date < :untilDate
+            order by s.date, s.startTime
+            """)
+    List<MovieShowtimeData> findMovieSchedule(@Param("movieId") Integer movieId,
+                                            @Param("fromDate") LocalDate fromDate,
+                                            @Param("untilDate") LocalDate untilDate);
+
     @Query("select s from Showtime s where s.startTime < :until and s.endTime > :from")
     List<Showtime> findOverlappingWindow(@Param("from") LocalDateTime from, @Param("until") LocalDateTime until);
     @Query(value = """

@@ -116,13 +116,16 @@ public class DefaultHomeService implements HomeService {
     @Override
     @Transactional(readOnly = true)
     public Optional<MovieViewModel> getMovieDetails(int movieId) {
-        return movies.findById(movieId).map(movie -> {
+        return movies.findDetailsById(movieId).map(movie -> {
             MovieViewModel model = mapMovie(movie);
-            applyReviewSummaries(List.of(model));
-            model.setReviews(reviews
+            List<Review> visibleReviews = reviews
                     .findByMovieMovieIdAndParentReviewIsNullAndStatusAndRatingIsNotNullOrderByCreatedAtDesc(
-                            movieId, VISIBLE)
-                    .stream().map(this::mapReview).toList());
+                            movieId, VISIBLE);
+            BigDecimal average = visibleReviews.isEmpty() ? BigDecimal.ZERO : visibleReviews.stream()
+                    .map(Review::getRating).reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .divide(BigDecimal.valueOf(visibleReviews.size()), 2, RoundingMode.HALF_UP);
+            applyReviewSummary(model, average, visibleReviews.size());
+            model.setReviews(visibleReviews.stream().map(this::mapReview).toList());
             return model;
         });
     }
@@ -222,7 +225,8 @@ public class DefaultHomeService implements HomeService {
             model.setCountryId(movie.getCountry().getCountryId());
             model.setCountryName(movie.getCountry().getCountryName());
         }
-        model.setGenre(movieGenres.findByMovieId(movie.getMovieId()).stream()
+        // findDetailsById fetches this collection together with country/language.
+        model.setGenre(movie.getMovieGenres().stream()
                 .map(MovieGenre::getGenre).filter(Objects::nonNull).map(Genre::getName)
                 .collect(Collectors.joining(", ")));
         // Inner joins intentionally ignore orphaned MovieDirectors/MovieCasts rows.
@@ -231,13 +235,14 @@ public class DefaultHomeService implements HomeService {
                 movieDirectors.findPersonNamesByMovieId(movie.getMovieId())));
         model.setMovieCast(String.join(", ",
                 movieCasts.findPersonNamesByMovieId(movie.getMovieId())));
-        model.setShowtimes(showtimes.findByMovieMovieIdOrderByDateAscStartTimeAsc(movie.getMovieId())
+        LocalDate today = LocalDate.now();
+        model.setShowtimes(showtimes.findMovieSchedule(movie.getMovieId(), today, today.plusDays(7))
                 .stream().map(showtime -> {
                     ShowtimeChoiceViewModel choice = new ShowtimeChoiceViewModel();
-                    choice.setShowtimeId(showtime.getShowtimeId());
-                    choice.setDate(showtime.getDate().toString());
-                    choice.setTime(showtime.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
-                    String roomName = showtime.getRoom() == null ? "" : showtime.getRoom().getRoomName();
+                    choice.setShowtimeId(showtime.showtimeId());
+                    choice.setDate(showtime.date().toString());
+                    choice.setTime(showtime.startTime().format(DateTimeFormatter.ofPattern("HH:mm")));
+                    String roomName = showtime.roomName() == null ? "" : showtime.roomName();
                     choice.setRoomName(roomName);
                     choice.setFormat(roomName.toUpperCase(Locale.ROOT).contains("IMAX") ? "IMAX 2D" : "2D");
                     return choice;
@@ -253,21 +258,6 @@ public class DefaultHomeService implements HomeService {
         model.setCreatedAt(review.getCreatedAt());
         model.setUserFullName(review.getUser() == null ? "COSMOS member" : review.getUser().getFullName());
         return model;
-    }
-
-    private void applyReviewSummaries(List<MovieViewModel> target) {
-        if (target.isEmpty()) return;
-        Map<Integer, List<Review>> grouped = reviews
-                .findByMovieMovieIdInAndParentReviewIsNullAndStatusAndRatingIsNotNull(
-                        target.stream().map(MovieViewModel::getMovieId).distinct().toList(), VISIBLE)
-                .stream().collect(Collectors.groupingBy(review -> review.getMovie().getMovieId()));
-        target.forEach(movie -> {
-            List<Review> ratings = grouped.getOrDefault(movie.getMovieId(), List.of());
-            BigDecimal average = ratings.isEmpty() ? BigDecimal.ZERO : ratings.stream()
-                    .map(Review::getRating).reduce(BigDecimal.ZERO, BigDecimal::add)
-                    .divide(BigDecimal.valueOf(ratings.size()), 2, RoundingMode.HALF_UP);
-            applyReviewSummary(movie, average, ratings.size());
-        });
     }
 
     private void applyReviewSummary(MovieViewModel movie, BigDecimal average, int count) {

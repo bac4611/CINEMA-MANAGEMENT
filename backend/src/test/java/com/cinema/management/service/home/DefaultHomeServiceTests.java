@@ -200,10 +200,10 @@ class DefaultHomeServiceTests {
     }
 
     @Test
-    void movieDetailsStillLoadsDirectorCastAndShowtimesThroughExistingRepositories() {
+    void movieDetailsFetchesMetadataOnceAndUsesTheSevenDaySchedule() {
         Movie movie = new Movie();
         movie.setMovieId(9);
-        when(movies.findById(9)).thenReturn(Optional.of(movie));
+        when(movies.findDetailsById(9)).thenReturn(Optional.of(movie));
         when(directors.findPersonNamesByMovieId(9)).thenReturn(List.of("Director"));
         when(casts.findPersonNamesByMovieId(9)).thenReturn(List.of("Actor"));
 
@@ -211,9 +211,12 @@ class DefaultHomeServiceTests {
 
         assertEquals("Director", result.getMovieDirector());
         assertEquals("Actor", result.getMovieCast());
-        verify(genres).findByMovieId(9);
-        verify(showtimes).findByMovieMovieIdOrderByDateAscStartTimeAsc(9);
-        verify(movies, never()).findAllCardData();
+        verify(movies).findDetailsById(9);
+        LocalDate today = LocalDate.now();
+        verify(showtimes).findMovieSchedule(9, today, today.plusDays(7));
+        verify(reviews).findByMovieMovieIdAndParentReviewIsNullAndStatusAndRatingIsNotNullOrderByCreatedAtDesc(9, "Visible");
+        verifyNoInteractions(genres);
+        verifyNoMoreInteractions(movies, reviews, showtimes);
     }
 
     private MovieCardData card(int id, String title, LocalDate releaseDate) {
