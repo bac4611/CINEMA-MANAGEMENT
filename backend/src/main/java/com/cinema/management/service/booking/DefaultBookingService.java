@@ -11,6 +11,8 @@ import com.cinema.management.model.entity.theater.*;
 import com.cinema.management.model.viewmodel.booking.*;
 import com.cinema.management.repository.account.UserRepository;
 import com.cinema.management.repository.booking.*;
+import com.cinema.management.repository.booking.projection.ConcessionData;
+import com.cinema.management.repository.booking.projection.HeldSeatData;
 import com.cinema.management.repository.movie.MovieCastRepository;
 import com.cinema.management.repository.movie.MovieDirectorRepository;
 import com.cinema.management.repository.movie.MovieRepository;
@@ -250,19 +252,55 @@ public class DefaultBookingService implements BookingService {
         if (!isMutable(hold) || hold.getShowtime() == null) {
             return Optional.empty();
         }
-        return Optional.of(buildBookingView(hold, false));
+        return Optional.of(buildBookingView(hold));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<BookingViewModel> getBookingView(UUID holdId, boolean requireSeats) {
+        return buildOrderView(holdId, requireSeats, true);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<BookingViewModel> getCheckoutView(UUID holdId) {
+        return buildOrderView(holdId, true, false);
+    }
+
+    private Optional<BookingViewModel> buildOrderView(UUID holdId, boolean requireSeats, boolean includeUnselectedCombos) {
         BookingHold hold = holdId == null ? null : holds.findDetailsById(holdId).orElse(null);
         if (!isMutable(hold) || hold.getShowtime() == null) {
             return Optional.empty();
         }
-        BookingViewModel model = buildBookingView(hold);
-        return requireSeats && (model.getSelectedSeats().isEmpty() || model.getSelectedSeats().size() > MAXIMUM_SEATS)
-                ? Optional.empty() : Optional.of(model);
+        var selected = seatHolds.findHeldSeatData(holdId).stream()
+                .sorted(Comparator.comparing(HeldSeatData::seatCode)).toList();
+        if (requireSeats && (selected.isEmpty() || selected.size() > MAXIMUM_SEATS)) {
+            return Optional.empty();
+        }
+        Showtime showtime = hold.getShowtime();
+        BookingViewModel model = new BookingViewModel();
+        model.setMovieId(hold.getMovie().getMovieId()); model.setMovieTitle(hold.getMovie().getTitle());
+        model.setShowtimeId(showtime.getShowtimeId()); model.setSelectedDate(showtime.getDate().toString());
+        model.setSelectedTime(showtime.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
+        model.setCinemaFormat(presentationFormat(showtime)); model.setBookingExpiresAtUtc(hold.getExpiresAtUtc());
+        model.setOccupiedSeats(List.of());
+        model.setSelectedSeats(selected.stream().map(HeldSeatData::seatCode).toList());
+        model.setSeatChoices(selected.stream().map(seat -> {
+            SeatChoiceViewModel choice = new SeatChoiceViewModel();
+            choice.setSeatId(seat.seatId()); choice.setSeatCode(seat.seatCode()); choice.setSeatType(seat.seatType());
+            choice.setPrice(seat.unitPrice()); choice.setSelected(true); return choice;
+        }).toList());
+        model.setConcessions(combos.findConcessionData(holdId, includeUnselectedCombos).stream()
+                .sorted(Comparator.comparing(ConcessionData::name))
+                .map(combo -> {
+                    int quantity = combo.heldQuantity() == null ? 0 : combo.heldQuantity();
+                    ConcessionItemViewModel item = new ConcessionItemViewModel(); item.setId(combo.comboId());
+                    item.setName(combo.name()); item.setSelectedQuantity(quantity);
+                    item.setPrice(combo.heldQuantity() == null ? combo.currentPrice() : combo.heldPrice());
+                    item.setStockQuantity(Math.max(0, combo.quantity() - combo.reservedQuantity() + quantity));
+                    return item;
+                }).toList());
+        return Optional.of(model);
     }
 
     @Override
@@ -655,10 +693,6 @@ public class DefaultBookingService implements BookingService {
     }
 
     private BookingViewModel buildBookingView(BookingHold hold) {
-        return buildBookingView(hold, true);
-    }
-
-    private BookingViewModel buildBookingView(BookingHold hold, boolean includeConcessions) {
         Showtime showtime = hold.getShowtime();
         List<Seat> roomSeats = seats.findByRoomRoomIdOrderBySeatCode(showtime.getRoom().getRoomId());
         Set<Integer> occupied = new HashSet<>(seatHolds.findActiveHeldSeatIds(showtime.getShowtimeId()));
@@ -686,19 +720,6 @@ public class DefaultBookingService implements BookingService {
             choice.setPrice(ownSeats.containsKey(seat.getSeatId()) ? ownSeats.get(seat.getSeatId()).getUnitPrice()
                     : showtime.getBasePrice().multiply(multipliers.getOrDefault(seat.getSeatType(), BigDecimal.ONE)));
             return choice;
-        }).toList());
-        if (!includeConcessions) {
-            return model;
-        }
-        Map<Integer, BookingComboHold> ownCombos = new HashMap<>();
-        hold.getComboHolds().forEach(item -> ownCombos.put(item.getComboId(), item));
-        model.setConcessions(combos.findAll().stream().sorted(Comparator.comparing(Combo::getComboName)).map(combo -> {
-            BookingComboHold own = ownCombos.get(combo.getComboId());
-            ConcessionItemViewModel item = new ConcessionItemViewModel(); item.setId(combo.getComboId());
-            item.setName(combo.getComboName()); item.setPrice(own == null ? combo.getComboPrice() : own.getUnitPrice());
-            item.setSelectedQuantity(own == null ? 0 : own.getQuantity());
-            item.setStockQuantity(Math.max(0, combo.getQuantity() - combo.getReservedQuantity()
-                    + (own == null ? 0 : own.getQuantity()))); return item;
         }).toList());
         return model;
     }

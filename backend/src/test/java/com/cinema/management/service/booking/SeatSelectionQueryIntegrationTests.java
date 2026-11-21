@@ -207,6 +207,142 @@ class SeatSelectionQueryIntegrationTests {
         assertEquals(new BigDecimal("120000.00"), model.getGrandTotal());
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {0, 40})
+    void concessionsAndCheckoutUseThreeQueriesWithoutLoadingSeatMap(int extras) {
+        Fixture f = fixture();
+        for (int i = 0; i < extras; i++) {
+            seat(f.room, "X" + i);
+            Combo combo = new Combo(); combo.setComboName("Extra " + i);
+            combo.setComboPrice(new BigDecimal("50000")); combo.setQuantity(10); em.persist(combo);
+        }
+        for (boolean checkout : List.of(false, true)) {
+            Statistics stats = reset();
+            var model = (checkout ? service.getCheckoutView(f.hold.getBookingHoldId())
+                    : service.getBookingView(f.hold.getBookingHoldId(), true)).orElseThrow();
+            assertEquals(3, stats.getPrepareStatementCount());
+            assertEquals(List.of("A1"), model.getSelectedSeats());
+            assertEquals(1, model.getSeatChoices().size(), "Only the customer's selected seats are needed");
+            assertTrue(model.getOccupiedSeats().isEmpty());
+            assertEquals(checkout ? 1 : 1 + extras, model.getConcessions().size());
+            var popcorn = model.getConcessions().stream().filter(c -> c.getName().equals("Popcorn")).findFirst().orElseThrow();
+            assertEquals(2, popcorn.getSelectedQuantity()); assertEquals(9, popcorn.getStockQuantity());
+            assertEquals(new BigDecimal("30000.00"), popcorn.getPrice());
+            assertEquals(new BigDecimal("60000.00"), model.getTicketSubtotal());
+            assertEquals(new BigDecimal("60000.00"), model.getConcessionSubtotal());
+            assertEquals(new BigDecimal("120000.00"), model.getGrandTotal());
+            assertEquals("Seat query movie", model.getMovieTitle());
+            assertEquals("18:00", model.getSelectedTime()); assertEquals("2D", model.getCinemaFormat());
+            assertNotNull(model.getBookingExpiresAtUtc());
+            for (Class<?> type : List.of(Seat.class, Ticket.class, Combo.class, SeatTypePricing.class,
+                    BookingSeatHold.class, BookingComboHold.class)) {
+                assertEquals(0, stats.getEntityStatistics(type.getName()).getLoadCount(), type.getSimpleName());
+            }
+            assertEquals(3, stats.getPrepareStatementCount(), "Reading totals must not trigger lazy SQL");
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/booking/select-concessions", "/booking/checkout"})
+    void orderTemplatesRenderCompleteContentWithThreeQueries(String path) throws Exception {
+        Fixture f = fixture();
+        Statistics stats = reset();
+        var mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+        String html = mvc.perform(get(path).with(user("seat@example.com").roles("KhachHang"))
+                        .sessionAttr("BookingHoldId", f.hold.getBookingHoldId().toString()))
+                .andExpect(status().isOk()).andReturn().getResponse()
+                .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        for (String expected : List.of("Seat query movie", "Popcorn", "120.000", "cosmos-site-footer", "</html>", "name=\"_csrf\"")) {
+            assertTrue(html.contains(expected), expected);
+        }
+        assertTrue(html.contains(path.endsWith("checkout") ? "/booking/start-payment" : "/booking/update-combo-hold"));
+        assertEquals(3, stats.getPrepareStatementCount());
+    }
+
+    @Test
+    void checkoutWithoutCombosKeepsTicketTotalAndConcessionsStillShowOptions() {
+        Fixture f = fixture();
+        em.createQuery("delete from BookingComboHold h where h.bookingHoldId=:id")
+                .setParameter("id", f.hold.getBookingHoldId()).executeUpdate();
+        Statistics stats = reset();
+        var checkout = service.getCheckoutView(f.hold.getBookingHoldId()).orElseThrow();
+        assertTrue(checkout.getConcessions().isEmpty());
+        assertEquals(new BigDecimal("60000.00"), checkout.getGrandTotal());
+        assertEquals(3, stats.getPrepareStatementCount());
+        reset();
+        var options = service.getBookingView(f.hold.getBookingHoldId(), true).orElseThrow();
+        assertEquals(1, options.getConcessions().size());
+        assertEquals(0, options.getConcessions().getFirst().getSelectedQuantity());
+        assertEquals(new BigDecimal("35000.00"), options.getConcessions().getFirst().getPrice());
+        assertEquals(7, options.getConcessions().getFirst().getStockQuantity());
+    }
+
+    @Test
+    void changingComboQuantityIsReflectedInBothOrderReadersAtHeldPrice() {
+        Fixture f = fixture();
+        int comboId = em.createQuery("select c.comboId from Combo c where c.comboName='Popcorn'", Integer.class)
+                .getSingleResult();
+        reset();
+        var added = service.updateCombo(f.hold.getBookingHoldId(), comboId, 1);
+        assertEquals(BookingService.Status.SUCCESS, added.status()); assertEquals(3, added.quantity());
+        reset();
+        for (var model : List.of(service.getBookingView(f.hold.getBookingHoldId(), true).orElseThrow(),
+                service.getCheckoutView(f.hold.getBookingHoldId()).orElseThrow())) {
+            assertEquals(3, model.getConcessions().getFirst().getSelectedQuantity());
+            assertEquals(new BigDecimal("30000.00"), model.getConcessions().getFirst().getPrice());
+            assertEquals(new BigDecimal("150000.00"), model.getGrandTotal());
+        }
+        assertEquals(BookingService.Status.SUCCESS, service.updateCombo(f.hold.getBookingHoldId(), comboId, -1).status());
+        reset();
+        assertEquals(new BigDecimal("120000.00"), service.getCheckoutView(f.hold.getBookingHoldId()).orElseThrow().getGrandTotal());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Cancelled", "Expired", "PaymentPending", "Processing"})
+    void invalidOrderStateIsRejectedWithoutLoadingOrderLines(String state) {
+        Fixture f = fixture(); f.hold.setStatus(state);
+        Statistics stats = reset();
+        assertTrue(service.getCheckoutView(f.hold.getBookingHoldId()).isEmpty());
+        assertEquals(1, stats.getPrepareStatementCount());
+        stats = reset();
+        assertTrue(service.getBookingView(f.hold.getBookingHoldId(), true).isEmpty());
+        assertEquals(1, stats.getPrepareStatementCount());
+    }
+
+    @Test
+    void expiredMissingAndEmptyOrdersKeepExistingRedirects() throws Exception {
+        Fixture f = fixture();
+        f.hold.setExpiresAtUtc(Instant.now().minusSeconds(10)); reset();
+        assertTrue(service.getCheckoutView(f.hold.getBookingHoldId()).isEmpty());
+        assertTrue(service.getBookingView(f.hold.getBookingHoldId(), true).isEmpty());
+        assertTrue(service.getCheckoutView(null).isEmpty());
+        assertTrue(service.getCheckoutView(UUID.randomUUID()).isEmpty());
+        BookingHold empty = hold(f, "Pending", 600); reset();
+        for (String path : List.of("/booking/select-concessions", "/booking/checkout")) {
+            var mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+            mvc.perform(get(path).sessionAttr("BookingHoldId", empty.getBookingHoldId().toString()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl(path.endsWith("checkout") ? "/booking" : "/booking/select-seats"));
+        }
+    }
+
+    @Test
+    void orderReadersRejectMoreThanFiveSeats() {
+        Fixture f = fixture();
+        for (int i=1; i<=5; i++) {
+            Seat seat = seat(f.room, "B"+i);
+            BookingSeatHold selected = new BookingSeatHold(); selected.setBookingHoldId(f.hold.getBookingHoldId());
+            selected.setShowtimeId(f.showtime.getShowtimeId()); selected.setSeatId(seat.getSeatId());
+            selected.setUnitPrice(new BigDecimal("60000")); selected.setHeldAtUtc(Instant.now()); em.persist(selected);
+        }
+        Statistics stats = reset();
+        assertTrue(service.getCheckoutView(f.hold.getBookingHoldId()).isEmpty());
+        assertEquals(2, stats.getPrepareStatementCount());
+        stats = reset();
+        assertTrue(service.getBookingView(f.hold.getBookingHoldId(), true).isEmpty());
+        assertEquals(2, stats.getPrepareStatementCount());
+    }
+
     @Test
     void limitAndDeselectRemainEnforced() {
         Fixture f = fixture();

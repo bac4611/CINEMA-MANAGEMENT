@@ -165,7 +165,7 @@ public class BookingController {
 
     @GetMapping("/booking/checkout")
     public String checkout(HttpServletRequest request, Model model, RedirectAttributes flash) {
-        var booking = bookings.getBookingView(currentHoldId(request), true).orElse(null);
+        var booking = bookings.getCheckoutView(currentHoldId(request)).orElse(null);
         if (booking == null) {
             flash.addFlashAttribute("alertError", "Phiên giữ chỗ đã hết hạn hoặc chưa chọn ghế.");
             return "redirect:/booking";
