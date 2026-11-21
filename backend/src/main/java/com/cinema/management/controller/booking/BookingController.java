@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -32,11 +33,15 @@ public class BookingController {
 
     @GetMapping("/booking")
     public String index(@RequestParam(required = false) Integer movieId,
-                        @RequestParam(required = false) LocalDate date, Model model) {
+                        @RequestParam(required = false) LocalDate date, Model model, HttpServletRequest request) {
         var schedule = bookings.getSchedule(movieId, date);
         if (schedule == null) {
             throw new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND);
         }
+        // The schedule can exceed the servlet buffer before its POST form is
+        // rendered. Persist the deferred CSRF token before response headers commit.
+        CsrfToken csrf = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+        if (csrf != null) csrf.getToken();
         model.addAttribute("booking", schedule);
         return "booking/index";
     }

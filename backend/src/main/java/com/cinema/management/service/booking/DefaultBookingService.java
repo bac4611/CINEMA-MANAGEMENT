@@ -14,8 +14,11 @@ import com.cinema.management.repository.booking.*;
 import com.cinema.management.repository.movie.MovieCastRepository;
 import com.cinema.management.repository.movie.MovieDirectorRepository;
 import com.cinema.management.repository.movie.MovieRepository;
+import com.cinema.management.repository.movie.MovieGenreRepository;
 import com.cinema.management.repository.payment.*;
 import com.cinema.management.repository.theater.*;
+import com.cinema.management.repository.theater.projection.BookingScheduleData;
+import com.cinema.management.repository.theater.projection.IdCount;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import org.hibernate.Hibernate;
@@ -45,6 +48,7 @@ public class DefaultBookingService implements BookingService {
 
     private final UserRepository users;
     private final MovieRepository movies;
+    private final MovieGenreRepository movieGenres;
     private final MovieCastRepository movieCasts;
     private final MovieDirectorRepository movieDirectors;
     private final ShowtimeRepository showtimes;
@@ -64,7 +68,7 @@ public class DefaultBookingService implements BookingService {
     private final ObjectMapper json;
     private final Environment environment;
 
-    public DefaultBookingService(UserRepository users, MovieRepository movies,
+    public DefaultBookingService(UserRepository users, MovieRepository movies, MovieGenreRepository movieGenres,
                                  MovieCastRepository movieCasts, MovieDirectorRepository movieDirectors,
                                  ShowtimeRepository showtimes, RoomRepository rooms,
                                  SeatRepository seats, SeatTypePricingRepository pricing,
@@ -77,6 +81,7 @@ public class DefaultBookingService implements BookingService {
                                  ObjectMapper json, Environment environment) {
         this.users = users;
         this.movies = movies;
+        this.movieGenres = movieGenres;
         this.movieCasts = movieCasts;
         this.movieDirectors = movieDirectors;
         this.showtimes = showtimes;
@@ -104,16 +109,16 @@ public class DefaultBookingService implements BookingService {
         LocalDate selectedDate = date == null ? today : date;
         LocalDate lastDate = today.plusDays(13);
         LocalDateTime now = LocalDateTime.now();
-        List<Showtime> available = showtimes.findByDateBetweenOrderByDateAscStartTimeAsc(today, lastDate).stream()
-                .filter(showtime -> !showtime.getStartTime().isBefore(now))
-                .filter(showtime -> movieId == null || movieId.equals(showtime.getMovie().getMovieId()))
-                .sorted(Comparator.comparing((Showtime value) -> value.getMovie().getTitle())
-                        .thenComparing(Showtime::getDate).thenComparing(Showtime::getStartTime))
-                .toList();
-        String title = movieId == null ? null : movies.findById(movieId).map(Movie::getTitle).orElse(null);
-        if (movieId != null && title == null) {
+        List<BookingScheduleData> rows = showtimes.findBookingSchedule(movieId, today, lastDate, now);
+        if (movieId != null && rows.isEmpty()) {
             return null;
         }
+        // The outer join retains a filtered movie even when it has no future showtimes.
+        String title = movieId == null ? null : rows.getFirst().title();
+        List<BookingScheduleData> available = rows.stream().filter(row -> row.showtimeId() != null)
+                .sorted(Comparator.comparing(BookingScheduleData::title)
+                        .thenComparing(BookingScheduleData::date).thenComparing(BookingScheduleData::startTime))
+                .toList();
 
         BookingSchedulePageViewModel model = new BookingSchedulePageViewModel();
         model.setToday(today);
@@ -123,21 +128,35 @@ public class DefaultBookingService implements BookingService {
         model.setDateOptions(IntStream.range(0, 14)
                 .mapToObj(offset -> buildDateOption(today.plusDays(offset), today, selectedDate)).toList());
 
-        Map<Integer, List<Showtime>> byMovie = new LinkedHashMap<>();
-        available.forEach(showtime -> byMovie.computeIfAbsent(showtime.getMovie().getMovieId(), ignored -> new ArrayList<>())
+        if (available.isEmpty()) {
+            return model;
+        }
+        List<Integer> movieIds = available.stream().map(BookingScheduleData::movieId).distinct().toList();
+        List<Integer> roomIds = available.stream().map(BookingScheduleData::roomId).distinct().toList();
+        List<Integer> showtimeIds = available.stream().map(BookingScheduleData::showtimeId).toList();
+        Map<Integer, String> genres = new HashMap<>();
+        movieGenres.findNamesByMovieIds(movieIds).forEach(genre ->
+                genres.merge(genre.movieId(), genre.name(), (left, right) -> left + ", " + right));
+        Map<Integer, Long> roomTotals = countsById(seats.countSeatsByRoomIds(roomIds));
+        Map<Integer, Long> sold = countsById(tickets.countSoldSeatsByShowtimeIds(showtimeIds));
+        Map<Integer, Long> held = countsById(seatHolds.countActiveSeatsByShowtimeIds(showtimeIds));
+
+        Map<Integer, List<BookingScheduleData>> byMovie = new LinkedHashMap<>();
+        available.forEach(showtime -> byMovie.computeIfAbsent(showtime.movieId(), ignored -> new ArrayList<>())
                 .add(showtime));
         List<BookingScheduleMovieViewModel> movieModels = new ArrayList<>();
-        for (List<Showtime> values : byMovie.values()) {
-            Movie movie = values.getFirst().getMovie();
-            var scheduleItems = values.stream().map(this::buildScheduleShowtime).toList();
+        for (List<BookingScheduleData> values : byMovie.values()) {
+            BookingScheduleData movie = values.getFirst();
+            var scheduleItems = values.stream().map(value -> buildScheduleShowtime(value,
+                    roomTotals.getOrDefault(value.roomId(), 0L),
+                    sold.getOrDefault(value.showtimeId(), 0L), held.getOrDefault(value.showtimeId(), 0L))).toList();
             BookingScheduleMovieViewModel item = new BookingScheduleMovieViewModel();
-            item.setMovieId(movie.getMovieId());
-            item.setTitle(movie.getTitle());
-            item.setPosterUrl(hasText(movie.getPosterUrl()) ? movie.getPosterUrl() : "/img/poster/poster1.png");
-            item.setGenres(movie.getMovieGenres().stream().map(value -> value.getGenre().getName())
-                    .reduce((left, right) -> left + ", " + right).orElse(""));
-            item.setDurationMinutes(movie.getDuration());
-            item.setAgeRating(movie.getAgeRating());
+            item.setMovieId(movie.movieId());
+            item.setTitle(movie.title());
+            item.setPosterUrl(hasText(movie.posterUrl()) ? movie.posterUrl() : "/img/poster/poster1.png");
+            item.setGenres(genres.getOrDefault(movie.movieId(), ""));
+            item.setDurationMinutes(movie.duration());
+            item.setAgeRating(movie.ageRating());
             item.setFormats(scheduleItems.stream().map(BookingScheduleShowtimeViewModel::getFormat)
                     .distinct().toList());
             item.setShowtimes(scheduleItems);
@@ -766,18 +785,23 @@ public class DefaultBookingService implements BookingService {
 
     private boolean isMutable(BookingHold hold) { return isActive(hold) && "Pending".equals(hold.getStatus()); }
 
-    private BookingScheduleShowtimeViewModel buildScheduleShowtime(Showtime showtime) {
-        Room room = rooms.findWithSeatsByRoomId(showtime.getRoom().getRoomId()).orElse(showtime.getRoom());
-        int total = room.getSeats().size();
-        int remaining = Math.max(0, total - (int) tickets.countByShowtimeShowtimeId(showtime.getShowtimeId())
-                - seatHolds.findActiveHeldSeatIds(showtime.getShowtimeId()).size());
+    private Map<Integer, Long> countsById(List<IdCount> rows) {
+        Map<Integer, Long> result = new HashMap<>();
+        rows.forEach(row -> result.put(row.id(), row.count()));
+        return result;
+    }
+
+    private BookingScheduleShowtimeViewModel buildScheduleShowtime(BookingScheduleData showtime,
+                                                                  long totalSeats, long sold, long held) {
+        int total = Math.toIntExact(totalSeats);
+        int remaining = Math.toIntExact(Math.max(0L, totalSeats - sold - held));
         boolean low = remaining > 0 && (remaining <= 20 || remaining <= total * .15);
         BookingScheduleShowtimeViewModel item = new BookingScheduleShowtimeViewModel();
-        item.setShowtimeId(showtime.getShowtimeId()); item.setMovieId(showtime.getMovie().getMovieId());
-        item.setDate(showtime.getDate().toString()); item.setDateLabel(showtime.getDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-        item.setTime(showtime.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm"))); item.setFormat(resolveFormat(showtime));
-        item.setRoomName(room.getRoomName()); item.setRemainingSeats(remaining); item.setTotalSeats(total);
-        item.setLate(showtime.getStartTime().toLocalTime().compareTo(LocalTime.of(22, 0)) >= 0);
+        item.setShowtimeId(showtime.showtimeId()); item.setMovieId(showtime.movieId());
+        item.setDate(showtime.date().toString()); item.setDateLabel(showtime.date().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+        item.setTime(showtime.startTime().format(DateTimeFormatter.ofPattern("HH:mm"))); item.setFormat(resolveFormat(showtime));
+        item.setRoomName(showtime.roomName()); item.setRemainingSeats(remaining); item.setTotalSeats(total);
+        item.setLate(showtime.startTime().toLocalTime().compareTo(LocalTime.of(22, 0)) >= 0);
         item.setLowAvailability(low); item.setSoldOut(remaining <= 0);
         item.setAvailabilityLabel(remaining <= 0 ? "Hết vé" : low ? "Còn ít ghế" : remaining + " ghế trống");
         return item;
@@ -816,11 +840,11 @@ public class DefaultBookingService implements BookingService {
                 showtime == null ? null : showtime.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")), null, message);
     }
 
-    private String resolveFormat(Showtime showtime) {
-        String voice = showtime.getMovie().getLanguage() != null
-                && showtime.getMovie().getLanguage().getLanguageName().toLowerCase(Locale.ROOT).contains("vi")
+    private String resolveFormat(BookingScheduleData showtime) {
+        String voice = showtime.languageName() != null
+                && showtime.languageName().toLowerCase(Locale.ROOT).contains("vi")
                 ? "LỒNG TIẾNG" : "PHỤ ĐỀ";
-        return (showtime.getRoom().getRoomName().toUpperCase(Locale.ROOT).contains("IMAX") ? "IMAX 2D" : "2D") + " " + voice;
+        return (showtime.roomName().toUpperCase(Locale.ROOT).contains("IMAX") ? "IMAX 2D" : "2D") + " " + voice;
     }
 
     private String presentationFormat(Showtime showtime) {
