@@ -41,7 +41,8 @@ class DefaultStaffServiceTests {
     @BeforeEach
     void setUp() {
         service = new DefaultStaffService(movies, genres, movieGenres, movieCasts, movieDirectors,
-                people, languages, countries, showtimes, rooms, seats, tickets, combos, payments);
+                people, languages, countries, showtimes, rooms, seats, tickets, combos, payments,
+                mock(com.cinema.management.service.home.MovieInformationCache.class));
     }
 
     @Test

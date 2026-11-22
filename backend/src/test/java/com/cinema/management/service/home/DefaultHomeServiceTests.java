@@ -36,7 +36,9 @@ class DefaultHomeServiceTests {
 
     @BeforeEach
     void setUp() {
-        service = new DefaultHomeService(movies, genres, casts, directors, reviews, users, showtimes);
+        service = new DefaultHomeService(movies, genres,
+                new MovieInformationCache(movies, directors, casts, "maximumSize=1000,expireAfterWrite=15m"),
+                reviews, users, showtimes);
     }
 
     @Test

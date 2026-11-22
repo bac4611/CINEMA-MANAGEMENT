@@ -17,7 +17,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class DefaultHomeService implements HomeService {
@@ -28,20 +27,18 @@ public class DefaultHomeService implements HomeService {
 
     private final MovieRepository movies;
     private final MovieGenreRepository movieGenres;
-    private final MovieCastRepository movieCasts;
-    private final MovieDirectorRepository movieDirectors;
+    private final MovieInformationCache movieInformation;
     private final ReviewRepository reviews;
     private final UserRepository users;
     private final ShowtimeRepository showtimes;
 
     public DefaultHomeService(MovieRepository movies, MovieGenreRepository movieGenres,
-                              MovieCastRepository movieCasts, MovieDirectorRepository movieDirectors,
+                              MovieInformationCache movieInformation,
                               ReviewRepository reviews, UserRepository users,
                               ShowtimeRepository showtimes) {
         this.movies = movies;
         this.movieGenres = movieGenres;
-        this.movieCasts = movieCasts;
-        this.movieDirectors = movieDirectors;
+        this.movieInformation = movieInformation;
         this.reviews = reviews;
         this.users = users;
         this.showtimes = showtimes;
@@ -116,7 +113,7 @@ public class DefaultHomeService implements HomeService {
     @Override
     @Transactional(readOnly = true)
     public Optional<MovieViewModel> getMovieDetails(int movieId) {
-        return movies.findDetailsById(movieId).map(movie -> {
+        return movieInformation.get(movieId).map(movie -> {
             MovieViewModel model = mapMovie(movie);
             List<Review> visibleReviews = reviews
                     .findByMovieMovieIdAndParentReviewIsNullAndStatusAndRatingIsNotNullOrderByCreatedAtDesc(
@@ -206,37 +203,26 @@ public class DefaultHomeService implements HomeService {
         return price;
     }
 
-    private MovieViewModel mapMovie(Movie movie) {
+    private MovieViewModel mapMovie(MovieInformation movie) {
         MovieViewModel model = new MovieViewModel();
-        model.setMovieId(movie.getMovieId());
-        model.setTitle(movie.getTitle());
-        model.setDuration(movie.getDuration());
-        model.setPosterUrl(movie.getPosterUrl());
-        model.setSynopsis(movie.getSynopsis());
-        model.setReleaseDate(movie.getReleaseDate());
-        model.setAgeRating(movie.getAgeRating());
-        model.setTrailer(cleanTrailer(movie.getTrailer()));
-        model.setAvailableFormats(extractFormats(movie.getTrailer()));
-        if (movie.getLanguage() != null) {
-            model.setLanguageId(movie.getLanguage().getLanguageId());
-            model.setLanguageName(movie.getLanguage().getLanguageName());
-        }
-        if (movie.getCountry() != null) {
-            model.setCountryId(movie.getCountry().getCountryId());
-            model.setCountryName(movie.getCountry().getCountryName());
-        }
-        // findDetailsById fetches this collection together with country/language.
-        model.setGenre(movie.getMovieGenres().stream()
-                .map(MovieGenre::getGenre).filter(Objects::nonNull).map(Genre::getName)
-                .collect(Collectors.joining(", ")));
-        // Inner joins intentionally ignore orphaned MovieDirectors/MovieCasts rows.
-        // Historical data must not make the public movie catalogue fail to render.
-        model.setMovieDirector(String.join(", ",
-                movieDirectors.findPersonNamesByMovieId(movie.getMovieId())));
-        model.setMovieCast(String.join(", ",
-                movieCasts.findPersonNamesByMovieId(movie.getMovieId())));
+        model.setMovieId(movie.movieId());
+        model.setTitle(movie.title());
+        model.setDuration(movie.duration());
+        model.setPosterUrl(movie.posterUrl());
+        model.setSynopsis(movie.synopsis());
+        model.setReleaseDate(movie.releaseDate());
+        model.setAgeRating(movie.ageRating());
+        model.setTrailer(cleanTrailer(movie.trailer()));
+        model.setAvailableFormats(extractFormats(movie.trailer()));
+        model.setLanguageId(movie.languageId());
+        model.setLanguageName(movie.languageName());
+        model.setCountryId(movie.countryId());
+        model.setCountryName(movie.countryName());
+        model.setGenre(movie.genre());
+        model.setMovieDirector(movie.director());
+        model.setMovieCast(movie.cast());
         LocalDate today = LocalDate.now();
-        model.setShowtimes(showtimes.findMovieSchedule(movie.getMovieId(), today, today.plusDays(7))
+        model.setShowtimes(showtimes.findMovieSchedule(movie.movieId(), today, today.plusDays(7))
                 .stream().map(showtime -> {
                     ShowtimeChoiceViewModel choice = new ShowtimeChoiceViewModel();
                     choice.setShowtimeId(showtime.showtimeId());

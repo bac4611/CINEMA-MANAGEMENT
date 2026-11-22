@@ -15,6 +15,7 @@ import com.cinema.management.repository.booking.*;
 import com.cinema.management.repository.movie.*;
 import com.cinema.management.repository.payment.PaymentRepository;
 import com.cinema.management.repository.theater.*;
+import com.cinema.management.service.home.MovieInformationCache;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -42,16 +43,19 @@ public class DefaultStaffService implements StaffService {
     private final LanguageRepository languages; private final CountryRepository countries;
     private final ShowtimeRepository showtimes; private final RoomRepository rooms; private final SeatRepository seats;
     private final TicketRepository tickets; private final ComboRepository combos; private final PaymentRepository payments;
+    private final MovieInformationCache movieInformation;
 
     public DefaultStaffService(MovieRepository movies, GenreRepository genres, MovieGenreRepository movieGenres,
                                MovieCastRepository movieCasts, MovieDirectorRepository movieDirectors,
                                PersonRepository people, LanguageRepository languages, CountryRepository countries,
                                ShowtimeRepository showtimes, RoomRepository rooms, SeatRepository seats,
-                               TicketRepository tickets, ComboRepository combos, PaymentRepository payments) {
+                               TicketRepository tickets, ComboRepository combos, PaymentRepository payments,
+                               MovieInformationCache movieInformation) {
         this.movies = movies; this.genres = genres; this.movieGenres = movieGenres; this.movieCasts = movieCasts;
         this.movieDirectors = movieDirectors; this.people = people; this.languages = languages; this.countries = countries;
         this.showtimes = showtimes; this.rooms = rooms; this.seats = seats; this.tickets = tickets;
         this.combos = combos; this.payments = payments;
+        this.movieInformation = movieInformation;
     }
 
     @Override @Transactional(readOnly = true)
@@ -249,6 +253,7 @@ public class DefaultStaffService implements StaffService {
         if (!validMovie(request)) return OperationResult.failure(Status.INVALID, "Dữ liệu phim không hợp lệ.");
         if (duplicateTitle(request, 0)) return OperationResult.failure(Status.CONFLICT, "Tên phim đã tồn tại. Vui lòng sửa phim hiện có thay vì thêm lại.");
         Movie movie = new Movie(); applyMovie(movie, request); movies.saveAndFlush(movie); saveMovieLinks(movie.getMovieId(), request);
+        movieInformation.evictAfterCommit(movie.getMovieId());
         return OperationResult.success("Đã thêm phim vào database.");
     }
 
@@ -262,6 +267,7 @@ public class DefaultStaffService implements StaffService {
         if (movie.getDuration() != request.getDuration() && !showtimes.findByMovieMovieId(request.getMovieId()).isEmpty())
             return OperationResult.failure(Status.CONFLICT, "Phim đã có lịch chiếu. Cần xử lý lịch chiếu trước khi đổi thời lượng.");
         applyMovie(movie, request); movies.save(movie); saveMovieLinks(movie.getMovieId(), request);
+        movieInformation.evictAfterCommit(movie.getMovieId());
         return OperationResult.success("Đã cập nhật phim.");
     }
 
@@ -276,6 +282,7 @@ public class DefaultStaffService implements StaffService {
             return OperationResult.failure(Status.CONFLICT, "Không thể xóa phim còn phiên đặt chỗ, thanh toán hoặc đánh giá liên quan.");
         showtimes.deleteAll(movieShowtimes); movieGenres.deleteByMovieId(movieId); movieCasts.deleteByMovieId(movieId);
         movieDirectors.deleteByMovieId(movieId); movies.delete(movie);
+        movieInformation.evictAfterCommit(movieId);
         return OperationResult.success("Đã xóa phim khỏi database.");
     }
 
