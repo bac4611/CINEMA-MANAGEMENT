@@ -9,6 +9,11 @@ import java.time.Instant;
 import java.util.*;
 
 public interface PaymentIntentRepository extends JpaRepository<PaymentIntent, Integer> {
+    @EntityGraph(attributePaths = {"bookingHold.movie", "bookingHold.showtime.room"})
+    @Query("select p from PaymentIntent p where p.paymentReference = :reference and p.user.userId = :userId")
+    Optional<PaymentIntent> findPaymentPageByReferenceAndUserId(@Param("reference") String reference,
+                                                               @Param("userId") Integer userId);
+
     Optional<PaymentIntent> findByPaymentReference(String paymentReference);
     Optional<PaymentIntent> findBySePayTransactionId(Long sePayTransactionId);
     Optional<PaymentIntent> findByBookingHoldBookingHoldId(UUID bookingHoldId);

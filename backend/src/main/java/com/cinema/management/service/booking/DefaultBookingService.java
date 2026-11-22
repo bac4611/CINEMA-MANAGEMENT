@@ -490,7 +490,7 @@ public class DefaultBookingService implements BookingService {
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public PaymentViewResult getPaymentPage(int userId, String paymentReference) {
-        PaymentIntent intent = paymentIntents.findByPaymentReferenceAndUserUserId(paymentReference, userId).orElse(null);
+        PaymentIntent intent = paymentIntents.findPaymentPageByReferenceAndUserId(paymentReference, userId).orElse(null);
         if (intent == null) {
             return new PaymentViewResult(Status.NOT_FOUND, null, null, "Phiên thanh toán không tồn tại.");
         }
@@ -501,8 +501,7 @@ public class DefaultBookingService implements BookingService {
             expireIntent(intent);
             return new PaymentViewResult(Status.EXPIRED, null, null, "Phiên thanh toán đã hết hạn.");
         }
-        BookingHold hold = intent.getBookingHold() == null ? null
-                : holds.findDetailsById(intent.getBookingHold().getBookingHoldId()).orElse(null);
+        BookingHold hold = intent.getBookingHold();
         if (hold == null || !"PaymentPending".equals(hold.getStatus())) {
             return new PaymentViewResult(Status.INVALID, null, null, "Dữ liệu giữ chỗ không còn hợp lệ.");
         }
@@ -725,21 +724,23 @@ public class DefaultBookingService implements BookingService {
     }
 
     private PaymentPageViewModel paymentPage(PaymentIntent intent, BookingHold hold) {
+        var heldSeats = seatHolds.findHeldSeatData(hold.getBookingHoldId());
+        var heldCombos = comboHolds.findHeldComboData(hold.getBookingHoldId());
         PaymentPageViewModel model = new PaymentPageViewModel();
         model.setPaymentReference(intent.getPaymentReference()); model.setMovieTitle(hold.getMovie().getTitle());
         model.setSelectedDate(hold.getShowtime().getDate().toString());
         model.setSelectedTime(hold.getShowtime().getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
         model.setCinemaFormat(presentationFormat(hold.getShowtime()));
-        model.setSelectedSeats(hold.getSeatHolds().stream().map(item -> item.getSeat().getSeatCode()).sorted().toList());
-        model.setConcessions(hold.getComboHolds().stream().map(value -> {
-            ConcessionItemViewModel item = new ConcessionItemViewModel(); item.setId(value.getComboId());
-            item.setName(value.getCombo() == null ? "Combo " + value.getComboId() : value.getCombo().getComboName());
-            item.setPrice(value.getUnitPrice()); item.setSelectedQuantity(value.getQuantity()); return item;
+        model.setSelectedSeats(heldSeats.stream().map(HeldSeatData::seatCode).sorted().toList());
+        model.setConcessions(heldCombos.stream().map(value -> {
+            ConcessionItemViewModel item = new ConcessionItemViewModel(); item.setId(value.comboId());
+            item.setName(value.name() == null ? "Combo " + value.comboId() : value.name());
+            item.setPrice(value.unitPrice()); item.setSelectedQuantity(value.quantity()); return item;
         }).toList());
-        model.setTicketSubtotal(hold.getSeatHolds().stream().map(BookingSeatHold::getUnitPrice)
+        model.setTicketSubtotal(heldSeats.stream().map(HeldSeatData::unitPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
-        model.setConcessionSubtotal(hold.getComboHolds().stream()
-                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+        model.setConcessionSubtotal(heldCombos.stream()
+                .map(item -> item.unitPrice().multiply(BigDecimal.valueOf(item.quantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
         model.setTotalAmount(intent.getExpectedAmount()); model.setQrImageUrl(qrUrl(intent));
         model.setExpiresAtUtc(intent.getExpiresAtUtc());
