@@ -22,6 +22,7 @@ import com.cinema.management.repository.theater.*;
 import com.cinema.management.repository.theater.projection.BookingScheduleData;
 import com.cinema.management.repository.theater.projection.IdCount;
 import com.cinema.management.repository.theater.projection.SeatLayoutData;
+import com.cinema.management.repository.theater.projection.ShowtimeSelectionData;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import org.hibernate.Hibernate;
@@ -217,9 +218,9 @@ public class DefaultBookingService implements BookingService {
         if (request.getShowtimeId() <= 0) {
             return selection(Status.INVALID, currentHoldId, request, null, "Vui lòng chọn một suất chiếu trước khi chọn ghế.");
         }
-        Showtime showtime = showtimes.findDetailsById(request.getShowtimeId()).orElse(null);
-        if (showtime == null || showtime.getMovie().getMovieId() != request.getMovieId()
-                || !showtime.getStartTime().isAfter(LocalDateTime.now())) {
+        ShowtimeSelectionData showtime = showtimes.findSelectionData(request.getShowtimeId()).orElse(null);
+        if (showtime == null || showtime.movieId() != request.getMovieId()
+                || !showtime.startTime().isAfter(LocalDateTime.now())) {
             return selection(Status.INVALID, currentHoldId, request, null, "Suất chiếu không tồn tại hoặc đã bắt đầu.");
         }
         BookingHold hold = currentHoldId == null ? null : holds.findByIdForUpdate(currentHoldId).orElse(null);
@@ -236,13 +237,18 @@ public class DefaultBookingService implements BookingService {
             hold = null;
         }
         if (hold == null) {
-            hold = createHold(userId, showtime.getMovie());
+            hold = createHold(userId, movies.getReferenceById(showtime.movieId()),
+                    showtimes.getReferenceById(showtime.showtimeId()));
+        } else if (hold.getShowtime() != null && hold.getShowtime().getShowtimeId().equals(showtime.showtimeId())) {
+            // Already locked and validated: retain its seats, combos and original expiry.
+            return selection(Status.SUCCESS, hold.getBookingHoldId(), request, showtime, null);
         }
-        if (hold.getShowtime() != null && !hold.getShowtime().getShowtimeId().equals(showtime.getShowtimeId())) {
+        if (hold.getShowtime() != null && !hold.getShowtime().getShowtimeId().equals(showtime.showtimeId())) {
             clearHeldResources(hold);
         }
-        hold.setShowtime(showtime);
-        holds.saveAndFlush(hold);
+        hold.setShowtime(showtimes.getReferenceById(showtime.showtimeId()));
+        // New holds are already persisted; existing holds are managed. The transaction
+        // commits and flushes before the controller receives this result.
         return selection(Status.SUCCESS, hold.getBookingHoldId(), request, showtime, null);
     }
 
@@ -789,7 +795,14 @@ public class DefaultBookingService implements BookingService {
     }
 
     private BookingHold createHold(int userId, Movie movie) {
+        return createHold(userId, movie, null);
+    }
+
+    private BookingHold createHold(int userId, Movie movie, Showtime showtime) {
         BookingHold hold = new BookingHold(); hold.setBookingHoldId(UUID.randomUUID()); hold.setMovie(movie);
+        // Populate the selected showtime before INSERT: generated ROWVERSION can
+        // force insertion on persist, so setting it afterwards causes an extra UPDATE.
+        hold.setShowtime(showtime);
         hold.setUser(users.getReferenceById(userId)); hold.setStatus("Pending"); hold.setCreatedAtUtc(Instant.now());
         hold.setExpiresAtUtc(Instant.now().plus(HOLD_DURATION)); return holds.save(hold);
     }
@@ -858,10 +871,13 @@ public class DefaultBookingService implements BookingService {
     }
 
     private ShowtimeSelectionResult selection(Status status, UUID holdId, SelectShowtimeRequest request,
-                                               Showtime showtime, String message) {
+                                               ShowtimeSelectionData showtime, String message) {
+        String format = showtime == null ? null
+                : (showtime.roomName().toUpperCase(Locale.ROOT).contains("IMAX") ? "IMAX" : "2D");
         return new ShowtimeSelectionResult(status, holdId, request.getMovieId(), request.getShowtimeId(),
-                showtime == null ? null : presentationFormat(showtime), showtime == null ? null : showtime.getDate().toString(),
-                showtime == null ? null : showtime.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")), null, message);
+                format,
+                showtime == null ? null : showtime.date().toString(),
+                showtime == null ? null : showtime.startTime().format(DateTimeFormatter.ofPattern("HH:mm")), null, message);
     }
 
     private String resolveFormat(BookingScheduleData showtime) {

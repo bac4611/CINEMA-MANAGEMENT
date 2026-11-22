@@ -3,6 +3,7 @@ package com.cinema.management.repository.theater;
 import com.cinema.management.model.entity.theater.Showtime;
 import com.cinema.management.repository.theater.projection.MovieShowtimeData;
 import com.cinema.management.repository.theater.projection.BookingScheduleData;
+import com.cinema.management.repository.theater.projection.ShowtimeSelectionData;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +13,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ShowtimeRepository extends JpaRepository<Showtime, Integer> {
+    @Query("""
+            select new com.cinema.management.repository.theater.projection.ShowtimeSelectionData(
+                s.showtimeId, s.movie.movieId, s.date, s.startTime, r.roomName)
+            from Showtime s left join s.room r where s.showtimeId = :showtimeId
+            """)
+    Optional<ShowtimeSelectionData> findSelectionData(@Param("showtimeId") Integer showtimeId);
+
     @Query("""
             select new com.cinema.management.repository.theater.projection.BookingScheduleData(
                 m.movieId, m.title, m.posterUrl, m.duration, m.ageRating, l.languageName,
