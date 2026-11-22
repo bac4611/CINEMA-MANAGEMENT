@@ -65,10 +65,11 @@ class RoutingIntegrationTests {
 
     @Test
     void rootRedirectsOnceAndContextPathAndEncodedQuerySurviveLegacyRedirects() throws Exception {
-        mvc.perform(get("/")).andExpect(status().isFound()).andExpect(redirectedUrl("/movies"));
+        mvc.perform(get("/")).andExpect(status().isFound()).andExpect(redirectedUrl("/home"));
+        mvc.perform(get("/home")).andExpect(status().isOk()).andExpect(view().name("home/index"));
         mvc.perform(get("/movies")).andExpect(status().isOk()).andExpect(view().name("home/movie"));
         mvc.perform(get("/cinema/").contextPath("/cinema"))
-                .andExpect(status().isFound()).andExpect(redirectedUrl("/cinema/movies"));
+                .andExpect(status().isFound()).andExpect(redirectedUrl("/cinema/home"));
         mvc.perform(get(URI.create("/cinema/Account/ResetPassword?userId=17&token=a%2Bb%2F%3D"))
                         .contextPath("/cinema"))
                 .andExpect(status().isPermanentRedirect())
