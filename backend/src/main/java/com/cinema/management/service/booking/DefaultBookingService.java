@@ -21,6 +21,7 @@ import com.cinema.management.repository.payment.*;
 import com.cinema.management.repository.theater.*;
 import com.cinema.management.repository.theater.projection.BookingScheduleData;
 import com.cinema.management.repository.theater.projection.IdCount;
+import com.cinema.management.repository.theater.projection.SeatLayoutData;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import org.hibernate.Hibernate;
@@ -693,12 +694,13 @@ public class DefaultBookingService implements BookingService {
 
     private BookingViewModel buildBookingView(BookingHold hold) {
         Showtime showtime = hold.getShowtime();
-        List<Seat> roomSeats = seats.findByRoomRoomIdOrderBySeatCode(showtime.getRoom().getRoomId());
-        Set<Integer> occupied = new HashSet<>(seatHolds.findActiveHeldSeatIds(showtime.getShowtimeId()));
-        occupied.removeAll(hold.getSeatHolds().stream().map(BookingSeatHold::getSeatId).toList());
-        occupied.addAll(tickets.findSoldSeatIds(showtime.getShowtimeId()));
+        List<SeatLayoutData> layout = seats.findLayoutWithPricing(showtime.getRoom().getRoomId());
+        List<SeatLayoutData> roomSeats = layout.stream().filter(row -> row.seatId() != null)
+                .sorted(Comparator.comparing(SeatLayoutData::seatCode)).toList();
+        Set<Integer> occupied = seatHolds.findOccupiedSeatIds(showtime.getShowtimeId(), hold.getBookingHoldId());
         Map<String, BigDecimal> multipliers = new HashMap<>();
-        pricing.findAll().forEach(item -> multipliers.put(item.getSeatType(), item.getMultiplier()));
+        layout.stream().filter(row -> row.seatId() == null)
+                .forEach(row -> multipliers.put(row.seatType(), row.multiplier()));
         Map<Integer, BookingSeatHold> ownSeats = new HashMap<>();
         hold.getSeatHolds().forEach(item -> ownSeats.put(item.getSeatId(), item));
         BookingViewModel model = new BookingViewModel();
@@ -707,17 +709,17 @@ public class DefaultBookingService implements BookingService {
         model.setSelectedTime(showtime.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
         model.setCinemaFormat(presentationFormat(showtime)); model.setBookingExpiresAtUtc(hold.getExpiresAtUtc());
         model.setSelectedSeats(hold.getSeatHolds().stream().map(item -> item.getSeat().getSeatCode()).sorted().toList());
-        model.setOccupiedSeats(roomSeats.stream().filter(item -> occupied.contains(item.getSeatId()))
-                .map(Seat::getSeatCode).toList());
+        model.setOccupiedSeats(roomSeats.stream().filter(item -> occupied.contains(item.seatId()))
+                .map(SeatLayoutData::seatCode).toList());
         model.setStandardTicketPrice(showtime.getBasePrice().multiply(multipliers.getOrDefault("Regular", BigDecimal.ONE)));
         model.setVipTicketPrice(showtime.getBasePrice().multiply(multipliers.getOrDefault("VIP", BigDecimal.ONE)));
         model.setSweetboxTicketPrice(showtime.getBasePrice().multiply(multipliers.getOrDefault("Couple", BigDecimal.ONE)));
         model.setSeatChoices(roomSeats.stream().map(seat -> {
-            SeatChoiceViewModel choice = new SeatChoiceViewModel(); choice.setSeatId(seat.getSeatId());
-            choice.setSeatCode(seat.getSeatCode()); choice.setSeatType(seat.getSeatType());
-            choice.setOccupied(occupied.contains(seat.getSeatId())); choice.setSelected(ownSeats.containsKey(seat.getSeatId()));
-            choice.setPrice(ownSeats.containsKey(seat.getSeatId()) ? ownSeats.get(seat.getSeatId()).getUnitPrice()
-                    : showtime.getBasePrice().multiply(multipliers.getOrDefault(seat.getSeatType(), BigDecimal.ONE)));
+            SeatChoiceViewModel choice = new SeatChoiceViewModel(); choice.setSeatId(seat.seatId());
+            choice.setSeatCode(seat.seatCode()); choice.setSeatType(seat.seatType());
+            choice.setOccupied(occupied.contains(seat.seatId())); choice.setSelected(ownSeats.containsKey(seat.seatId()));
+            choice.setPrice(ownSeats.containsKey(seat.seatId()) ? ownSeats.get(seat.seatId()).getUnitPrice()
+                    : showtime.getBasePrice().multiply(multipliers.getOrDefault(seat.seatType(), BigDecimal.ONE)));
             return choice;
         }).toList());
         return model;

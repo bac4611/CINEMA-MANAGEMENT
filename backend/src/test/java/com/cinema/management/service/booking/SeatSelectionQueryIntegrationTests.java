@@ -119,7 +119,7 @@ class SeatSelectionQueryIntegrationTests {
 
     @ParameterizedTest
     @ValueSource(ints = {0, 40})
-    void fiveQueriesRegardlessOfUnrelatedTicketsAndPreservesSeatStates(int unrelatedTickets) {
+    void threeQueriesRegardlessOfUnrelatedTicketsAndPreservesSeatStates(int unrelatedTickets) {
         Fixture f = fixture();
         Showtime other = showtime(f.movie, f.room);
         for (int i = 0; i < unrelatedTickets; i++) ticket(f.booking, other, seat(f.room, "X" + i));
@@ -127,7 +127,7 @@ class SeatSelectionQueryIntegrationTests {
 
         var model = service.getSeatSelectionView(f.hold.getBookingHoldId()).orElseThrow();
 
-        assertEquals(5, stats.getPrepareStatementCount());
+        assertEquals(3, stats.getPrepareStatementCount());
         assertEquals(List.of("A1"), model.getSelectedSeats());
         assertEquals(Set.of("A2", "A3", "A6", "A7"), new HashSet<>(model.getOccupiedSeats()));
         assertEquals(new BigDecimal("60000.00"), model.seatPrice("A1"), "Preserve the held price");
@@ -138,11 +138,56 @@ class SeatSelectionQueryIntegrationTests {
         assertEquals(0, stats.getEntityStatistics(Ticket.class.getName()).getLoadCount(),
                 "Sold seats must use scalar IDs, never hydrate tickets");
         assertEquals(0, stats.getEntityStatistics(Combo.class.getName()).getLoadCount());
-        assertEquals(5, stats.getPrepareStatementCount(), "Reading the model must not trigger lazy SQL");
+        assertEquals(1, stats.getEntityStatistics(Seat.class.getName()).getLoadCount(),
+                "Only the held seat is hydrated, the room layout uses scalar rows");
+        assertEquals(3, stats.getPrepareStatementCount(), "Reading the model must not trigger lazy SQL");
     }
 
     @Test
-    void actualSeatTemplateRendersWithFiveContentQueries() throws Exception {
+    void unionPreservesSoldSeatsEvenWhenAlsoHeldByCurrentOrAnotherSession() {
+        Fixture f = fixture();
+        ticket(f.booking, f.showtime, f.seats.getFirst());
+        ticket(f.booking, f.showtime, f.seats.get(1));
+        Statistics stats = reset();
+        var model = service.getSeatSelectionView(f.hold.getBookingHoldId()).orElseThrow();
+        assertEquals(Set.of("A1", "A2", "A3", "A6", "A7"), new HashSet<>(model.getOccupiedSeats()));
+        assertEquals(5, model.getOccupiedSeats().size(), "UNION must not duplicate sold-and-held seats");
+        assertEquals(List.of("A1"), model.getSelectedSeats());
+        var own = model.getSeatChoices().stream().filter(s -> s.getSeatCode().equals("A1")).findFirst().orElseThrow();
+        assertTrue(own.isSelected()); assertTrue(own.isOccupied(), "A sold seat always remains unavailable");
+        assertEquals(new BigDecimal("60000.00"), own.getPrice());
+        assertEquals(3, stats.getPrepareStatementCount());
+    }
+
+    @Test
+    void preservesEveryPriceCategoryAndEmptyRoomWithoutAdditionalQueries() {
+        Fixture f = fixture();
+        SeatTypePricing vip = new SeatTypePricing(); vip.setSeatType("VIP");
+        vip.setMultiplier(new BigDecimal("1.50")); em.persist(vip);
+        SeatTypePricing couple = new SeatTypePricing(); couple.setSeatType("Couple");
+        couple.setMultiplier(new BigDecimal("2.00")); em.persist(couple);
+        Seat vipSeat = seat(f.room, "B1"); vipSeat.setSeatType("VIP");
+        Seat coupleSeat = seat(f.room, "C1"); coupleSeat.setSeatType("Couple");
+        Statistics stats = reset();
+        var model = service.getSeatSelectionView(f.hold.getBookingHoldId()).orElseThrow();
+        assertEquals(0, new BigDecimal("97500").compareTo(model.seatPrice("B1")));
+        assertEquals(0, new BigDecimal("130000").compareTo(model.seatPrice("C1")));
+        assertEquals(3, stats.getPrepareStatementCount());
+        Room empty = new Room(); empty.setRoomName("Empty Hall"); em.persist(empty);
+        BookingHold emptyHold = hold(f, "Pending", 600);
+        emptyHold.setShowtime(showtime(f.movie, empty));
+        stats = reset();
+        var emptyModel = service.getSeatSelectionView(emptyHold.getBookingHoldId()).orElseThrow();
+        assertTrue(emptyModel.getSeatChoices().isEmpty()); assertTrue(emptyModel.getSelectedSeats().isEmpty());
+        assertTrue(emptyModel.getOccupiedSeats().isEmpty());
+        assertEquals(0, new BigDecimal("65000").compareTo(emptyModel.getStandardTicketPrice()));
+        assertEquals(0, new BigDecimal("97500").compareTo(emptyModel.getVipTicketPrice()));
+        assertEquals(0, new BigDecimal("130000").compareTo(emptyModel.getSweetboxTicketPrice()));
+        assertEquals(3, stats.getPrepareStatementCount(), "Pricing is returned even when the room has no seats");
+    }
+
+    @Test
+    void actualSeatTemplateRendersWithThreeContentQueries() throws Exception {
         Fixture f = fixture();
         Statistics stats = reset();
         var mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
@@ -154,7 +199,7 @@ class SeatSelectionQueryIntegrationTests {
         assertTrue(html.contains("Seat query movie"));
         assertTrue(html.contains("/booking/hold-seat"));
         assertTrue(html.contains("cosmos-site-footer"));
-        assertEquals(5, stats.getPrepareStatementCount());
+        assertEquals(3, stats.getPrepareStatementCount());
     }
 
     @Test

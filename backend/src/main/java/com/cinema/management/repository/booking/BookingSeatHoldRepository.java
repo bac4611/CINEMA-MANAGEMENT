@@ -12,6 +12,16 @@ import java.util.UUID;
 public interface BookingSeatHoldRepository
         extends JpaRepository<BookingSeatHold, BookingSeatHold.Key> {
     @Query("""
+            select t.seat.seatId from Ticket t where t.showtime.showtimeId = :showtimeId
+            union
+            select h.seatId from BookingSeatHold h
+            where h.showtimeId = :showtimeId and h.bookingHoldId <> :holdId
+              and h.bookingHold.status in ('Pending', 'PaymentPending', 'Processing')
+              and h.bookingHold.expiresAtUtc > CURRENT_TIMESTAMP
+            """)
+    Set<Integer> findOccupiedSeatIds(@Param("showtimeId") Integer showtimeId, @Param("holdId") UUID holdId);
+
+    @Query("""
             select new com.cinema.management.repository.booking.projection.HeldSeatData(
                 h.seatId, s.seatCode, s.seatType, h.unitPrice)
             from BookingSeatHold h join h.seat s
